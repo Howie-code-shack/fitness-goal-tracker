@@ -5,6 +5,7 @@ A modern Single Page Application for tracking your annual fitness goals across r
 ## Features
 
 - **Set Yearly Goals**: Define your distance targets (in kilometers) for running, cycling, and swimming
+- **Strava Integration**: Connect your Strava account to automatically sync your activities
 - **Track Progress**: View your current progress against your yearly goals
 - **Progress Analytics**:
   - Distance completed
@@ -39,12 +40,19 @@ A modern Single Page Application for tracking your annual fitness goals across r
 npm install
 ```
 
-2. Run the development server:
+2. Set up environment variables:
+```bash
+cp .env.local.example .env.local
+```
+
+Then edit `.env.local` and add your Strava API credentials (see Strava Integration section below).
+
+3. Run the development server:
 ```bash
 npm run dev
 ```
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ## Usage
 
@@ -68,6 +76,49 @@ The dashboard displays:
   - Whether you're ahead or behind schedule
 
 - **Progress Graph**: Shows your cumulative progress over the year compared to the target pace
+
+## Strava Integration
+
+This application integrates with the Strava API to automatically sync your activities. Here's why we chose Strava over Garmin:
+
+### Why Strava API?
+
+1. **Free Access**: Strava provides free API access with generous rate limits (200 requests per 15 minutes, 2,000 per day)
+2. **No Upfront Cost**: Unlike Garmin which requires a $5,000 administrative fee
+3. **Easy Registration**: Any developer can register and start using the API immediately
+4. **Better Documentation**: Well-documented REST API with OAuth 2.0
+5. **Active Community**: Widely used with extensive developer support
+
+### Setting Up Strava Integration
+
+1. **Create a Strava API Application**:
+   - Go to https://www.strava.com/settings/api
+   - Click "Create App" or use an existing application
+   - Set the **Authorization Callback Domain** to: `localhost`
+   - Note your **Client ID** and **Client Secret**
+
+2. **Configure Environment Variables**:
+   - Copy `.env.local.example` to `.env.local`
+   - Add your Strava credentials:
+     ```
+     NEXT_PUBLIC_STRAVA_CLIENT_ID=your_client_id
+     STRAVA_CLIENT_SECRET=your_client_secret
+     NEXT_PUBLIC_APP_URL=http://localhost:3000
+     ```
+
+3. **Connect Your Strava Account**:
+   - Start the application and navigate to the dashboard
+   - Click "Connect" on the Strava integration card
+   - Authorize the application in your browser
+   - Click "Sync Activities" to import your activities
+
+### Supported Activity Types
+
+The integration automatically maps Strava activities to goal types:
+
+- **Running**: Run, Virtual Run, Trail Run
+- **Cycling**: Ride, Virtual Ride, Mountain Bike Ride, Gravel Ride, E-Bike Ride
+- **Swimming**: Swim, Open Water Swim
 
 ## Project Structure
 

@@ -7,6 +7,29 @@ import type { Goal, Activity } from '@/lib/validations/goal';
 let goals: Goal[] = [];
 let activities: Activity[] = [];
 
+// Helper function to recalculate goal progress from activities
+function recalculateProgress() {
+  const currentYear = new Date().getFullYear();
+
+  // Reset all progress for current year
+  goals.forEach((goal) => {
+    if (goal.year === currentYear) {
+      goal.currentProgress = 0;
+    }
+  });
+
+  // Sum up activities by goal type for current year
+  activities.forEach((activity) => {
+    const activityDate = new Date(activity.date);
+    if (activityDate.getFullYear() === currentYear) {
+      const goal = goals.find((g) => g.type === activity.goalType && g.year === currentYear);
+      if (goal) {
+        goal.currentProgress += activity.distance;
+      }
+    }
+  });
+}
+
 export const goalsRouter = router({
   // Get all goals for current year
   getGoals: publicProcedure.query(() => {
@@ -115,4 +138,34 @@ export const goalsRouter = router({
     const currentYear = new Date().getFullYear();
     return goals.some(g => g.year === currentYear);
   }),
+
+  // Import activities from external source (e.g., Strava)
+  importActivities: publicProcedure
+    .input(
+      z.array(
+        z.object({
+          id: z.string(),
+          goalType: goalTypeSchema,
+          distance: z.number(),
+          date: z.string(),
+          notes: z.string().optional(),
+        })
+      )
+    )
+    .mutation(({ input }) => {
+      // Remove any existing activities with the same IDs (to avoid duplicates)
+      const newActivityIds = new Set(input.map((a) => a.id));
+      activities = activities.filter((a) => !newActivityIds.has(a.id));
+
+      // Add new activities
+      activities.push(...input);
+
+      // Recalculate all goal progress
+      recalculateProgress();
+
+      return {
+        imported: input.length,
+        totalActivities: activities.length,
+      };
+    }),
 });
