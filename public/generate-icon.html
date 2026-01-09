@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate App Icon</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            margin: 20px 0;
+        }
+        button {
+            background: #3B82F6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #2563EB;
+        }
+        .info {
+            background: #EFF6FF;
+            border: 1px solid #DBEAFE;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fitness Goal Tracker - App Icon Generator</h1>
+
+    <div class="info">
+        <strong>Instructions:</strong>
+        <ol>
+            <li>The icon will be generated at 512x512px (Strava's recommended size)</li>
+            <li>Click the download button below to save the PNG</li>
+            <li>Upload this PNG to your Strava API application settings</li>
+        </ol>
+    </div>
+
+    <canvas id="canvas" width="512" height="512"></canvas>
+
+    <div>
+        <button onclick="downloadIcon()">Download Icon (512x512)</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawIcon() {
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, 512, 512);
+            gradient.addColorStop(0, '#3B82F6');
+            gradient.addColorStop(0.5, '#8B5CF6');
+            gradient.addColorStop(1, '#EC4899');
+
+            // Draw rounded rectangle background
+            ctx.fillStyle = gradient;
+            roundRect(ctx, 0, 0, 512, 512, 64);
+            ctx.fill();
+
+            // Set common styles
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+
+            // Draw running figure
+            drawRunningFigure();
+
+            // Draw cycling figure
+            drawCyclingFigure();
+
+            // Draw target/goal
+            drawTarget();
+
+            // Draw progress chart
+            drawProgressChart();
+        }
+
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        function drawRunningFigure() {
+            ctx.save();
+            ctx.translate(80, 120);
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(90, 50, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Body
+            ctx.beginPath();
+            ctx.moveTo(100, 90);
+            ctx.lineTo(85, 110);
+            ctx.lineTo(85, 180);
+            ctx.lineTo(105, 180);
+            ctx.lineTo(105, 140);
+            ctx.lineTo(130, 100);
+            ctx.fill();
+
+            // Arms
+            ctx.beginPath();
+            ctx.moveTo(80, 90);
+            ctx.lineTo(60, 130);
+            ctx.lineTo(40, 120);
+            ctx.lineTo(60, 80);
+            ctx.fill();
+
+            // Legs
+            ctx.lineWidth = 12;
+            ctx.beginPath();
+            ctx.moveTo(105, 180);
+            ctx.lineTo(105, 240);
+            ctx.lineTo(85, 260);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(85, 180);
+            ctx.lineTo(70, 240);
+            ctx.lineTo(90, 260);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawCyclingFigure() {
+            ctx.save();
+            ctx.translate(200, 120);
+
+            // Wheels
+            ctx.lineWidth = 10;
+            ctx.beginPath();
+            ctx.arc(50, 200, 35, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(150, 200, 35, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(100, 60, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Body
+            ctx.beginPath();
+            ctx.moveTo(100, 80);
+            ctx.lineTo(80, 140);
+            ctx.lineTo(120, 140);
+            ctx.closePath();
+            ctx.fill();
+
+            // Frame
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.moveTo(80, 140);
+            ctx.lineTo(50, 165);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(120, 140);
+            ctx.lineTo(150, 165);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(100, 140);
+            ctx.lineTo(100, 100);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawTarget() {
+            ctx.save();
+            ctx.translate(360, 320);
+
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.arc(0, 0, 60, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.arc(0, 0, 40, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(0, 0, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sparkles
+            ctx.lineWidth = 6;
+            [[-50, -50, -30, -30], [50, -50, 30, -30], [-50, 50, -30, 30], [50, 50, 30, 30]].forEach(([x1, y1, x2, y2]) => {
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            });
+
+            ctx.restore();
+        }
+
+        function drawProgressChart() {
+            ctx.save();
+            ctx.translate(60, 380);
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(100, -40);
+            ctx.lineTo(200, -20);
+            ctx.lineTo(300, -60);
+            ctx.stroke();
+
+            // Data points
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            [[0, 0], [100, -40], [200, -20], [300, -60]].forEach(([x, y]) => {
+                ctx.beginPath();
+                ctx.arc(x, y, 8, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.restore();
+        }
+
+        function downloadIcon() {
+            const link = document.createElement('a');
+            link.download = 'fitness-goal-tracker-icon-512x512.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Draw the icon when page loads
+        drawIcon();
+    </script>
+</body>
+</html>
