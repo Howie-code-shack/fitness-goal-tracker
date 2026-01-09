@@ -27,6 +27,8 @@ export function GoalCard({ goalType, label, icon, color }: GoalCardProps) {
 
   const isAhead = stats.distanceAheadBehind > 0;
   const progressPercentage = Math.min(100, stats.percentComplete);
+  const isSwimming = goalType === 'swimming';
+  const unit = isSwimming ? 'm' : 'km';
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
@@ -38,7 +40,7 @@ export function GoalCard({ goalType, label, icon, color }: GoalCardProps) {
         <div>
           <h3 className="text-xl font-bold text-gray-900 dark:text-white">{label}</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {goal.yearlyTarget.toFixed(0)} km goal
+            {goal.yearlyTarget.toFixed(0)} {unit} goal
           </p>
         </div>
       </div>
@@ -66,8 +68,8 @@ export function GoalCard({ goalType, label, icon, color }: GoalCardProps) {
             Completed
           </p>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {stats.distanceCompleted.toFixed(1)}
-            <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-1">km</span>
+            {stats.distanceCompleted.toFixed(isSwimming ? 0 : 1)}
+            <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-1">{unit}</span>
           </p>
         </div>
 
@@ -76,8 +78,8 @@ export function GoalCard({ goalType, label, icon, color }: GoalCardProps) {
             Remaining
           </p>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {stats.distanceRemaining.toFixed(1)}
-            <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-1">km</span>
+            {stats.distanceRemaining.toFixed(isSwimming ? 0 : 1)}
+            <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-1">{unit}</span>
           </p>
         </div>
 
@@ -92,8 +94,8 @@ export function GoalCard({ goalType, label, icon, color }: GoalCardProps) {
             )}
           >
             {isAhead ? '+' : ''}
-            {stats.distanceAheadBehind.toFixed(1)}
-            <span className="text-sm font-normal ml-1">km</span>
+            {stats.distanceAheadBehind.toFixed(isSwimming ? 0 : 1)}
+            <span className="text-sm font-normal ml-1">{unit}</span>
           </p>
         </div>
       </div>

@@ -32,9 +32,9 @@ export const createActivitySchema = z.object({
 });
 
 export const updateGoalsSchema = z.object({
-  running: z.number().positive().min(1),
-  cycling: z.number().positive().min(1),
-  swimming: z.number().positive().min(1),
+  running: z.number().positive().min(1, 'Running target must be at least 1 km'),
+  cycling: z.number().positive().min(1, 'Cycling target must be at least 1 km'),
+  swimming: z.number().positive().min(1, 'Swimming target must be at least 1 meter'),
 });
 
 export type CreateGoalInput = z.infer<typeof createGoalSchema>;

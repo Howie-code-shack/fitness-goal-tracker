@@ -20,7 +20,7 @@ export function GoalSetup({ onComplete }: { onComplete: () => void }) {
     defaultValues: {
       running: 1000,
       cycling: 2000,
-      swimming: 50,
+      swimming: 50000, // Default to 50km in meters
     },
   });
 
@@ -37,9 +37,9 @@ export function GoalSetup({ onComplete }: { onComplete: () => void }) {
   };
 
   const goalTypes = [
-    { key: 'running' as const, label: 'Running', icon: '🏃', color: 'bg-blue-500' },
-    { key: 'cycling' as const, label: 'Cycling', icon: '🚴', color: 'bg-green-500' },
-    { key: 'swimming' as const, label: 'Swimming', icon: '🏊', color: 'bg-purple-500' },
+    { key: 'running' as const, label: 'Running', icon: '🏃', color: 'bg-blue-500', unit: 'km' },
+    { key: 'cycling' as const, label: 'Cycling', icon: '🚴', color: 'bg-green-500', unit: 'km' },
+    { key: 'swimming' as const, label: 'Swimming', icon: '🏊', color: 'bg-purple-500', unit: 'm' },
   ];
 
   return (
@@ -50,7 +50,7 @@ export function GoalSetup({ onComplete }: { onComplete: () => void }) {
             Set Your {new Date().getFullYear()} Goals
           </h1>
           <p className="text-gray-600 dark:text-gray-300">
-            Enter your target distances in kilometers for the year
+            Enter your target distances for the year
           </p>
         </div>
 
@@ -66,7 +66,7 @@ export function GoalSetup({ onComplete }: { onComplete: () => void }) {
               <div className="flex items-center gap-3">
                 <input
                   type="number"
-                  step="0.1"
+                  step={goalType.key === 'swimming' ? '1' : '0.1'}
                   {...register(goalType.key, { valueAsNumber: true })}
                   className={cn(
                     'flex-1 px-4 py-3 text-lg border-2 rounded-lg',
@@ -78,7 +78,7 @@ export function GoalSetup({ onComplete }: { onComplete: () => void }) {
                   )}
                   placeholder="0"
                 />
-                <span className="text-gray-600 dark:text-gray-300 font-medium">km</span>
+                <span className="text-gray-600 dark:text-gray-300 font-medium">{goalType.unit}</span>
               </div>
               {errors[goalType.key] && (
                 <p className="text-red-500 text-sm mt-1">{errors[goalType.key]?.message}</p>

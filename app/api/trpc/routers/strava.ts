@@ -94,10 +94,15 @@ export const stravaRouter = router({
             return null; // Skip activities we don't track
           }
 
+          // Swimming is stored in meters, running/cycling in km
+          const distance = goalType === 'swimming'
+            ? activity.distance // Keep meters for swimming
+            : activity.distance / 1000; // Convert meters to km for running/cycling
+
           return {
             id: `strava-${activity.id}`,
             goalType,
-            distance: activity.distance / 1000, // Convert meters to km
+            distance,
             date: activity.start_date,
             notes: activity.name,
             source: 'strava',
