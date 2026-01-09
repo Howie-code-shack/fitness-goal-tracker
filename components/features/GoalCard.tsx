@@ -1,0 +1,102 @@
+'use client';
+
+import { trpc } from '@/lib/api/trpc-client';
+import { cn } from '@/lib/utils';
+import type { GoalType } from '@/types';
+
+interface GoalCardProps {
+  goalType: GoalType;
+  label: string;
+  icon: string;
+  color: string;
+}
+
+export function GoalCard({ goalType, label, icon, color }: GoalCardProps) {
+  const { data: goals } = trpc.goals.getGoals.useQuery();
+  const { data: stats } = trpc.goals.getProgressStats.useQuery({ goalType });
+
+  const goal = goals?.find((g) => g.type === goalType);
+
+  if (!goal || !stats) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 animate-pulse">
+        <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
+      </div>
+    );
+  }
+
+  const isAhead = stats.distanceAheadBehind > 0;
+  const progressPercentage = Math.min(100, stats.percentComplete);
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className={cn('w-14 h-14 rounded-full flex items-center justify-center text-3xl', color)}>
+          {icon}
+        </div>
+        <div>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">{label}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {goal.yearlyTarget.toFixed(0)} km goal
+          </p>
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="mb-4">
+        <div className="flex justify-between text-sm mb-2">
+          <span className="text-gray-600 dark:text-gray-300 font-medium">Progress</span>
+          <span className="text-gray-900 dark:text-white font-bold">
+            {progressPercentage.toFixed(1)}%
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+          <div
+            className={cn('h-full rounded-full transition-all duration-500', color)}
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            Completed
+          </p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            {stats.distanceCompleted.toFixed(1)}
+            <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-1">km</span>
+          </p>
+        </div>
+
+        <div className="space-y-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            Remaining
+          </p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            {stats.distanceRemaining.toFixed(1)}
+            <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-1">km</span>
+          </p>
+        </div>
+
+        <div className="col-span-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+            Ahead/Behind Schedule
+          </p>
+          <p
+            className={cn(
+              'text-xl font-bold',
+              isAhead ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+            )}
+          >
+            {isAhead ? '+' : ''}
+            {stats.distanceAheadBehind.toFixed(1)}
+            <span className="text-sm font-normal ml-1">km</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
