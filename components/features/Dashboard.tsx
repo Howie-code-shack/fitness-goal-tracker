@@ -11,6 +11,9 @@ export function Dashboard() {
   const [selectedGoal, setSelectedGoal] = useState<GoalType>('running');
   const utils = trpc.useUtils();
 
+  // Fetch all progress stats to determine the most urgent activity
+  const { data: allStats } = trpc.goals.getAllProgressStats.useQuery();
+
   const goalTypes = [
     { key: 'running' as const, label: 'Running', icon: '🏃', color: 'bg-blue-500' },
     { key: 'cycling' as const, label: 'Cycling', icon: '🚴', color: 'bg-green-500' },
@@ -53,6 +56,7 @@ export function Dashboard() {
                 label={goalType.label}
                 icon={goalType.icon}
                 color={goalType.color}
+                isMostUrgent={allStats?.mostUrgent === goalType.key}
               />
             </button>
           ))}

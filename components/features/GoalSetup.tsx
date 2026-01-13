@@ -18,9 +18,9 @@ export function GoalSetup({ onComplete }: { onComplete: () => void }) {
   } = useForm<UpdateGoalsInput>({
     resolver: zodResolver(updateGoalsSchema),
     defaultValues: {
-      running: 1000,
-      cycling: 2000,
-      swimming: 50000, // Default to 50km in meters
+      running: 400,
+      cycling: 4000,
+      swimming: 80000,
     },
   });
 

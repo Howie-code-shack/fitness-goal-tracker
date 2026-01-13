@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { trpc } from '@/lib/api/trpc-client';
 import { storage } from '@/lib/db/storage';
 
-export default function StravaConnectPage() {
+function StravaConnectContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -118,5 +118,24 @@ export default function StravaConnectPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function StravaConnectPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Loading...
+            </h2>
+          </div>
+        </div>
+      }
+    >
+      <StravaConnectContent />
+    </Suspense>
   );
 }

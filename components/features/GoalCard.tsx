@@ -9,9 +9,10 @@ interface GoalCardProps {
   label: string;
   icon: string;
   color: string;
+  isMostUrgent?: boolean;
 }
 
-export function GoalCard({ goalType, label, icon, color }: GoalCardProps) {
+export function GoalCard({ goalType, label, icon, color, isMostUrgent }: GoalCardProps) {
   const { data: goals } = trpc.goals.getGoals.useQuery();
   const { data: stats } = trpc.goals.getProgressStats.useQuery({ goalType });
 
@@ -31,7 +32,17 @@ export function GoalCard({ goalType, label, icon, color }: GoalCardProps) {
   const unit = isSwimming ? 'm' : 'km';
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+    <div className={cn(
+      "bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow relative",
+      isMostUrgent && "ring-2 ring-orange-500 ring-offset-2"
+    )}>
+      {/* Urgency Badge */}
+      {isMostUrgent && (
+        <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
+          Priority
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <div className={cn('w-14 h-14 rounded-full flex items-center justify-center text-3xl', color)}>
@@ -87,16 +98,26 @@ export function GoalCard({ goalType, label, icon, color }: GoalCardProps) {
           <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
             Ahead/Behind Schedule
           </p>
-          <p
-            className={cn(
-              'text-xl font-bold',
-              isAhead ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-            )}
-          >
-            {isAhead ? '+' : ''}
-            {stats.distanceAheadBehind.toFixed(isSwimming ? 0 : 1)}
-            <span className="text-sm font-normal ml-1">{unit}</span>
-          </p>
+          <div className="flex items-baseline gap-3">
+            <p
+              className={cn(
+                'text-xl font-bold',
+                isAhead ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+              )}
+            >
+              {isAhead ? '+' : ''}
+              {stats.distanceAheadBehind.toFixed(isSwimming ? 0 : 1)}
+              <span className="text-sm font-normal ml-1">{unit}</span>
+            </p>
+            <p
+              className={cn(
+                'text-sm font-semibold',
+                isAhead ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+              )}
+            >
+              ({isAhead ? '+' : ''}{stats.percentBehind.toFixed(1)}%)
+            </p>
+          </div>
         </div>
       </div>
     </div>

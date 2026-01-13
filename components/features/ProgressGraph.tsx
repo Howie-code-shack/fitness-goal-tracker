@@ -75,7 +75,7 @@ export function ProgressGraph({ goalType }: ProgressGraphProps) {
               borderRadius: '0.5rem',
               color: '#F9FAFB',
             }}
-            formatter={(value: number) => [`${value.toFixed(1)} km`, '']}
+            formatter={(value?: number) => [value !== undefined ? `${value.toFixed(1)} km` : '', '']}
           />
           <Legend
             wrapperStyle={{ paddingTop: '1rem' }}

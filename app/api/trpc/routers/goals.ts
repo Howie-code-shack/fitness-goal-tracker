@@ -124,14 +124,71 @@ export const goalsRouter = router({
       const daysPassed = Math.ceil((now.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24));
       const expectedProgress = (goal.yearlyTarget * daysPassed) / daysInYear;
 
+      const distanceAheadBehind = goal.currentProgress - expectedProgress;
+
+      // Calculate percentage behind relative to yearly target
+      // Negative means behind, positive means ahead
+      const percentBehind = goal.yearlyTarget > 0
+        ? (distanceAheadBehind / goal.yearlyTarget) * 100
+        : 0;
+
       return {
         distanceRemaining: Math.max(0, goal.yearlyTarget - goal.currentProgress),
         distanceCompleted: goal.currentProgress,
-        distanceAheadBehind: goal.currentProgress - expectedProgress,
+        distanceAheadBehind,
         percentComplete: (goal.currentProgress / goal.yearlyTarget) * 100,
         expectedProgress,
+        percentBehind, // Negative = behind schedule, positive = ahead
       };
     }),
+
+  // Get progress stats for all goals to determine most urgent
+  getAllProgressStats: publicProcedure.query(() => {
+    const currentYear = new Date().getFullYear();
+    const currentYearGoals = goals.filter(g => g.year === currentYear);
+
+    if (currentYearGoals.length === 0) {
+      return { stats: [], mostUrgent: null };
+    }
+
+    // Calculate expected progress based on current date
+    const yearStart = new Date(currentYear, 0, 1);
+    const yearEnd = new Date(currentYear, 11, 31);
+    const now = new Date();
+    const daysInYear = Math.ceil((yearEnd.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24));
+    const daysPassed = Math.ceil((now.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24));
+
+    const stats = currentYearGoals.map(goal => {
+      const expectedProgress = (goal.yearlyTarget * daysPassed) / daysInYear;
+      const distanceAheadBehind = goal.currentProgress - expectedProgress;
+      const percentBehind = goal.yearlyTarget > 0
+        ? (distanceAheadBehind / goal.yearlyTarget) * 100
+        : 0;
+
+      return {
+        goalType: goal.type,
+        distanceRemaining: Math.max(0, goal.yearlyTarget - goal.currentProgress),
+        distanceCompleted: goal.currentProgress,
+        distanceAheadBehind,
+        percentComplete: (goal.currentProgress / goal.yearlyTarget) * 100,
+        expectedProgress,
+        percentBehind,
+      };
+    });
+
+    // Find the most urgent activity (most negative percentBehind)
+    const mostUrgent = stats.reduce((worst, current) => {
+      if (current.percentBehind < worst.percentBehind) {
+        return current;
+      }
+      return worst;
+    }, stats[0]);
+
+    // Only flag as urgent if actually behind schedule
+    const urgentGoalType = mostUrgent.percentBehind < 0 ? mostUrgent.goalType : null;
+
+    return { stats, mostUrgent: urgentGoalType };
+  }),
 
   // Check if goals are set up
   hasGoals: publicProcedure.query(() => {
