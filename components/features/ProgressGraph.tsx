@@ -4,6 +4,7 @@ import { trpc } from '@/lib/api/trpc-client';
 import type { GoalType } from '@/types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface ProgressGraphProps {
   goalType: GoalType;
@@ -46,61 +47,67 @@ export function ProgressGraph({ goalType }: ProgressGraphProps) {
 
   if (!goal || !stats) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 h-96 flex items-center justify-center">
-        <p className="text-gray-500 dark:text-gray-400">Loading graph...</p>
-      </div>
+      <Card className="h-96 flex items-center justify-center">
+        <CardContent>
+          <p className="text-muted-foreground">Loading graph...</p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Progress Over Time</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
-          <XAxis
-            dataKey="month"
-            stroke="#6B7280"
-            style={{ fontSize: '0.875rem' }}
-          />
-          <YAxis
-            stroke="#6B7280"
-            style={{ fontSize: '0.875rem' }}
-            label={{ value: 'Distance (km)', angle: -90, position: 'insideLeft', style: { fill: '#6B7280' } }}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: '#1F2937',
-              border: 'none',
-              borderRadius: '0.5rem',
-              color: '#F9FAFB',
-            }}
-            formatter={(value?: number) => [value !== undefined ? `${value.toFixed(1)} km` : '', '']}
-          />
-          <Legend
-            wrapperStyle={{ paddingTop: '1rem' }}
-            iconType="line"
-          />
-          <Line
-            type="monotone"
-            dataKey="target"
-            stroke="#9CA3AF"
-            strokeWidth={2}
-            strokeDasharray="5 5"
-            name="Target"
-            dot={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="actual"
-            stroke="#3B82F6"
-            strokeWidth={3}
-            name="Your Progress"
-            dot={{ fill: '#3B82F6', r: 4 }}
-            connectNulls={false}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Progress Over Time</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
+            <XAxis
+              dataKey="month"
+              stroke="#6B7280"
+              style={{ fontSize: '0.875rem' }}
+            />
+            <YAxis
+              stroke="#6B7280"
+              style={{ fontSize: '0.875rem' }}
+              label={{ value: 'Distance (km)', angle: -90, position: 'insideLeft', style: { fill: '#6B7280' } }}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: '#1F2937',
+                border: 'none',
+                borderRadius: '0.5rem',
+                color: '#F9FAFB',
+              }}
+              formatter={(value?: number) => [value !== undefined ? `${value.toFixed(1)} km` : '', '']}
+            />
+            <Legend
+              wrapperStyle={{ paddingTop: '1rem' }}
+              iconType="line"
+            />
+            <Line
+              type="monotone"
+              dataKey="target"
+              stroke="#9CA3AF"
+              strokeWidth={2}
+              strokeDasharray="5 5"
+              name="Target"
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="actual"
+              stroke="#3B82F6"
+              strokeWidth={3}
+              name="Your Progress"
+              dot={{ fill: '#3B82F6', r: 4 }}
+              connectNulls={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
   );
 }
