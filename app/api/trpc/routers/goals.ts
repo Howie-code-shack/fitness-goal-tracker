@@ -1,27 +1,7 @@
-import { router, publicProcedure } from '../trpc';
+import { router, protectedProcedure } from '../trpc';
 import { z } from 'zod';
 import { updateGoalsSchema, createActivitySchema, goalTypeSchema } from '@/lib/validations/goal';
 import { prisma } from '@/lib/db/prisma';
-
-// Temporary default user ID until authentication is implemented
-const DEFAULT_USER_ID = 'default-user';
-
-// Helper to ensure default user exists
-async function ensureDefaultUser() {
-  const user = await prisma.user.findUnique({
-    where: { id: DEFAULT_USER_ID },
-  });
-
-  if (!user) {
-    await prisma.user.create({
-      data: {
-        id: DEFAULT_USER_ID,
-        email: 'default@example.com',
-        name: 'Default User',
-      },
-    });
-  }
-}
 
 // Helper to calculate progress stats for a goal
 function calculateProgressStats(goal: { target: number; type: string }, currentProgress: number) {
@@ -51,12 +31,12 @@ function calculateProgressStats(goal: { target: number; type: string }, currentP
 
 export const goalsRouter = router({
   // Get all goals for current year
-  getGoals: publicProcedure.query(async () => {
+  getGoals: protectedProcedure.query(async ({ ctx }) => {
     const currentYear = new Date().getFullYear();
 
     const goals = await prisma.goal.findMany({
       where: {
-        userId: DEFAULT_USER_ID,
+        userId: ctx.userId,
         year: currentYear,
       },
     });
@@ -69,7 +49,7 @@ export const goalsRouter = router({
 
         const result = await prisma.activity.aggregate({
           where: {
-            userId: DEFAULT_USER_ID,
+            userId: ctx.userId,
             goalType: goal.type,
             date: {
               gte: yearStart,
@@ -95,11 +75,9 @@ export const goalsRouter = router({
   }),
 
   // Initialize or update goals for the year
-  updateGoals: publicProcedure
+  updateGoals: protectedProcedure
     .input(updateGoalsSchema)
-    .mutation(async ({ input }) => {
-      await ensureDefaultUser();
-
+    .mutation(async ({ ctx, input }) => {
       const currentYear = new Date().getFullYear();
       const goalTypes = [
         { type: 'running', target: input.running },
@@ -112,14 +90,14 @@ export const goalsRouter = router({
           return prisma.goal.upsert({
             where: {
               userId_type_year: {
-                userId: DEFAULT_USER_ID,
+                userId: ctx.userId,
                 type,
                 year: currentYear,
               },
             },
             update: { target },
             create: {
-              userId: DEFAULT_USER_ID,
+              userId: ctx.userId,
               type,
               target,
               year: currentYear,
@@ -138,14 +116,12 @@ export const goalsRouter = router({
     }),
 
   // Add an activity
-  addActivity: publicProcedure
+  addActivity: protectedProcedure
     .input(createActivitySchema)
-    .mutation(async ({ input }) => {
-      await ensureDefaultUser();
-
+    .mutation(async ({ ctx, input }) => {
       const activity = await prisma.activity.create({
         data: {
-          userId: DEFAULT_USER_ID,
+          userId: ctx.userId,
           goalType: input.goalType,
           distance: input.distance,
           date: new Date(input.date),
@@ -163,12 +139,12 @@ export const goalsRouter = router({
     }),
 
   // Get activities for a specific goal type
-  getActivities: publicProcedure
+  getActivities: protectedProcedure
     .input(z.object({ goalType: goalTypeSchema }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const activities = await prisma.activity.findMany({
         where: {
-          userId: DEFAULT_USER_ID,
+          userId: ctx.userId,
           goalType: input.goalType,
         },
         orderBy: {
@@ -186,15 +162,15 @@ export const goalsRouter = router({
     }),
 
   // Get progress stats for a goal
-  getProgressStats: publicProcedure
+  getProgressStats: protectedProcedure
     .input(z.object({ goalType: goalTypeSchema }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const currentYear = new Date().getFullYear();
 
       const goal = await prisma.goal.findUnique({
         where: {
           userId_type_year: {
-            userId: DEFAULT_USER_ID,
+            userId: ctx.userId,
             type: input.goalType,
             year: currentYear,
           },
@@ -211,7 +187,7 @@ export const goalsRouter = router({
 
       const result = await prisma.activity.aggregate({
         where: {
-          userId: DEFAULT_USER_ID,
+          userId: ctx.userId,
           goalType: input.goalType,
           date: {
             gte: yearStart,
@@ -229,12 +205,12 @@ export const goalsRouter = router({
     }),
 
   // Get progress stats for all goals to determine most urgent
-  getAllProgressStats: publicProcedure.query(async () => {
+  getAllProgressStats: protectedProcedure.query(async ({ ctx }) => {
     const currentYear = new Date().getFullYear();
 
     const goals = await prisma.goal.findMany({
       where: {
-        userId: DEFAULT_USER_ID,
+        userId: ctx.userId,
         year: currentYear,
       },
     });
@@ -250,7 +226,7 @@ export const goalsRouter = router({
       goals.map(async (goal) => {
         const result = await prisma.activity.aggregate({
           where: {
-            userId: DEFAULT_USER_ID,
+            userId: ctx.userId,
             goalType: goal.type,
             date: {
               gte: yearStart,
@@ -282,12 +258,12 @@ export const goalsRouter = router({
   }),
 
   // Check if goals are set up
-  hasGoals: publicProcedure.query(async () => {
+  hasGoals: protectedProcedure.query(async ({ ctx }) => {
     const currentYear = new Date().getFullYear();
 
     const count = await prisma.goal.count({
       where: {
-        userId: DEFAULT_USER_ID,
+        userId: ctx.userId,
         year: currentYear,
       },
     });
@@ -296,7 +272,7 @@ export const goalsRouter = router({
   }),
 
   // Import activities from external source (e.g., Strava)
-  importActivities: publicProcedure
+  importActivities: protectedProcedure
     .input(
       z.array(
         z.object({
@@ -308,9 +284,7 @@ export const goalsRouter = router({
         })
       )
     )
-    .mutation(async ({ input }) => {
-      await ensureDefaultUser();
-
+    .mutation(async ({ ctx, input }) => {
       // Upsert activities (use stravaId for deduplication)
       const results = await Promise.all(
         input.map(async (activity) => {
@@ -328,7 +302,7 @@ export const goalsRouter = router({
                 notes: activity.notes,
               },
               create: {
-                userId: DEFAULT_USER_ID,
+                userId: ctx.userId,
                 goalType: activity.goalType,
                 distance: activity.distance,
                 date: new Date(activity.date),
@@ -340,7 +314,7 @@ export const goalsRouter = router({
             // Create new activity for non-Strava sources
             return prisma.activity.create({
               data: {
-                userId: DEFAULT_USER_ID,
+                userId: ctx.userId,
                 goalType: activity.goalType,
                 distance: activity.distance,
                 date: new Date(activity.date),
@@ -352,7 +326,7 @@ export const goalsRouter = router({
       );
 
       const totalCount = await prisma.activity.count({
-        where: { userId: DEFAULT_USER_ID },
+        where: { userId: ctx.userId },
       });
 
       return {

@@ -13,11 +13,17 @@
        - `POSTGRES_URL_NON_POOLING` (direct connection)
     3. Run migrations: `npx prisma migrate dev --name init`
 
-- [ ] **Add user authentication**
-  - Currently using temporary default user ID
-  - Options: NextAuth.js, Clerk, or Lucia
-  - Add auth middleware to tRPC context
-  - Replace DEFAULT_USER_ID with actual authenticated user
+- [x] **Add user authentication** ✅
+  - NextAuth.js v5 with Google OAuth provider
+  - Prisma adapter for session storage
+  - Protected tRPC procedures with auth context
+  - Login/logout UI with UserMenu component
+  - **To complete setup:**
+    1. Create Google OAuth credentials at https://console.cloud.google.com/apis/credentials
+    2. Add to `.env.local`:
+       - `GOOGLE_CLIENT_ID=your-client-id`
+       - `GOOGLE_CLIENT_SECRET=your-client-secret`
+    3. Run migration: `npx prisma migrate deploy`
 
 - [x] **Secure Strava token storage** ✅
   - Tokens now stored in database (StravaToken model)
@@ -26,9 +32,9 @@
 
 ## 🟡 Medium Priority (Features & UX)
 
-- [ ] **Add shadcn/ui components**
-  - Replace raw HTML inputs/buttons with polished components
-  - Add proper form components, cards, dialogs, toasts
+- [x] **Add shadcn/ui components** ✅
+  - Initialized shadcn/ui with Button, Input, Label, Card components
+  - Updated GoalSetup, StravaConnect, GoalCard, ProgressGraph to use shadcn
 
 - [ ] **Add activity editing and deletion**
   - Currently can only add activities, not modify or remove them

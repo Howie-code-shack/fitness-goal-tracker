@@ -1,33 +1,13 @@
-import { router, publicProcedure } from '../trpc';
+import { router, protectedProcedure } from '../trpc';
 import { z } from 'zod';
 import { StravaClient, getValidAccessToken } from '@/lib/api/strava-client';
 import { ACTIVITY_TYPE_MAPPING } from '@/types/strava';
 import { prisma } from '@/lib/db/prisma';
 import type { StravaTokens } from '@/types/strava';
 
-// Temporary default user ID until authentication is implemented
-const DEFAULT_USER_ID = 'default-user';
-
-// Helper to ensure default user exists
-async function ensureDefaultUser() {
-  const user = await prisma.user.findUnique({
-    where: { id: DEFAULT_USER_ID },
-  });
-
-  if (!user) {
-    await prisma.user.create({
-      data: {
-        id: DEFAULT_USER_ID,
-        email: 'default@example.com',
-        name: 'Default User',
-      },
-    });
-  }
-}
-
 export const stravaRouter = router({
   // Get authorization URL
-  getAuthUrl: publicProcedure.query(() => {
+  getAuthUrl: protectedProcedure.query(() => {
     const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/strava/callback`;
     return {
       url: StravaClient.getAuthorizationUrl(redirectUri),
@@ -35,11 +15,9 @@ export const stravaRouter = router({
   }),
 
   // Exchange code for tokens (called from callback page)
-  exchangeToken: publicProcedure
+  exchangeToken: protectedProcedure
     .input(z.object({ code: z.string() }))
-    .mutation(async ({ input }) => {
-      await ensureDefaultUser();
-
+    .mutation(async ({ ctx, input }) => {
       const tokenResponse = await StravaClient.exchangeToken(input.code);
 
       const tokens: StravaTokens = {
@@ -50,7 +28,7 @@ export const stravaRouter = router({
 
       // Store tokens in database
       await prisma.stravaToken.upsert({
-        where: { userId: DEFAULT_USER_ID },
+        where: { userId: ctx.userId },
         update: {
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
@@ -58,7 +36,7 @@ export const stravaRouter = router({
           athleteId: String(tokenResponse.athlete.id),
         },
         create: {
-          userId: DEFAULT_USER_ID,
+          userId: ctx.userId,
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
           expiresAt: tokens.expiresAt,
@@ -73,34 +51,34 @@ export const stravaRouter = router({
     }),
 
   // Check if user is connected to Strava
-  isConnected: publicProcedure.query(async () => {
+  isConnected: protectedProcedure.query(async ({ ctx }) => {
     const stravaToken = await prisma.stravaToken.findUnique({
-      where: { userId: DEFAULT_USER_ID },
+      where: { userId: ctx.userId },
     });
 
     return stravaToken !== null;
   }),
 
   // Disconnect from Strava
-  disconnect: publicProcedure.mutation(async () => {
+  disconnect: protectedProcedure.mutation(async ({ ctx }) => {
     await prisma.stravaToken.deleteMany({
-      where: { userId: DEFAULT_USER_ID },
+      where: { userId: ctx.userId },
     });
 
     return { success: true };
   }),
 
   // Sync activities from Strava
-  syncActivities: publicProcedure
+  syncActivities: protectedProcedure
     .input(
       z.object({
         after: z.number().optional(), // Unix timestamp - fetch activities after this date
         before: z.number().optional(), // Unix timestamp - fetch activities before this date
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const stravaToken = await prisma.stravaToken.findUnique({
-        where: { userId: DEFAULT_USER_ID },
+        where: { userId: ctx.userId },
       });
 
       if (!stravaToken) {
@@ -120,7 +98,7 @@ export const stravaRouter = router({
       if (accessToken !== tokens.accessToken) {
         const refreshed = await StravaClient.refreshToken(tokens.refreshToken);
         await prisma.stravaToken.update({
-          where: { userId: DEFAULT_USER_ID },
+          where: { userId: ctx.userId },
           data: {
             accessToken: refreshed.access_token,
             refreshToken: refreshed.refresh_token,
@@ -171,9 +149,9 @@ export const stravaRouter = router({
     }),
 
   // Get athlete info
-  getAthlete: publicProcedure.query(async () => {
+  getAthlete: protectedProcedure.query(async ({ ctx }) => {
     const stravaToken = await prisma.stravaToken.findUnique({
-      where: { userId: DEFAULT_USER_ID },
+      where: { userId: ctx.userId },
     });
 
     if (!stravaToken) {
