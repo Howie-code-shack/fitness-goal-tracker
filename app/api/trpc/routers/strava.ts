@@ -2,10 +2,28 @@ import { router, publicProcedure } from '../trpc';
 import { z } from 'zod';
 import { StravaClient, getValidAccessToken } from '@/lib/api/strava-client';
 import { ACTIVITY_TYPE_MAPPING } from '@/types/strava';
+import { prisma } from '@/lib/db/prisma';
 import type { StravaTokens } from '@/types/strava';
 
-// Server-side token storage (in production, use a database)
-const tokenStore = new Map<string, StravaTokens>();
+// Temporary default user ID until authentication is implemented
+const DEFAULT_USER_ID = 'default-user';
+
+// Helper to ensure default user exists
+async function ensureDefaultUser() {
+  const user = await prisma.user.findUnique({
+    where: { id: DEFAULT_USER_ID },
+  });
+
+  if (!user) {
+    await prisma.user.create({
+      data: {
+        id: DEFAULT_USER_ID,
+        email: 'default@example.com',
+        name: 'Default User',
+      },
+    });
+  }
+}
 
 export const stravaRouter = router({
   // Get authorization URL
@@ -20,6 +38,8 @@ export const stravaRouter = router({
   exchangeToken: publicProcedure
     .input(z.object({ code: z.string() }))
     .mutation(async ({ input }) => {
+      await ensureDefaultUser();
+
       const tokenResponse = await StravaClient.exchangeToken(input.code);
 
       const tokens: StravaTokens = {
@@ -28,8 +48,23 @@ export const stravaRouter = router({
         expiresAt: tokenResponse.expires_at,
       };
 
-      // Store tokens (in production, associate with user ID)
-      tokenStore.set('default', tokens);
+      // Store tokens in database
+      await prisma.stravaToken.upsert({
+        where: { userId: DEFAULT_USER_ID },
+        update: {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          expiresAt: tokens.expiresAt,
+          athleteId: String(tokenResponse.athlete.id),
+        },
+        create: {
+          userId: DEFAULT_USER_ID,
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          expiresAt: tokens.expiresAt,
+          athleteId: String(tokenResponse.athlete.id),
+        },
+      });
 
       return {
         tokens,
@@ -38,13 +73,20 @@ export const stravaRouter = router({
     }),
 
   // Check if user is connected to Strava
-  isConnected: publicProcedure.query(() => {
-    return tokenStore.has('default');
+  isConnected: publicProcedure.query(async () => {
+    const stravaToken = await prisma.stravaToken.findUnique({
+      where: { userId: DEFAULT_USER_ID },
+    });
+
+    return stravaToken !== null;
   }),
 
   // Disconnect from Strava
-  disconnect: publicProcedure.mutation(() => {
-    tokenStore.delete('default');
+  disconnect: publicProcedure.mutation(async () => {
+    await prisma.stravaToken.deleteMany({
+      where: { userId: DEFAULT_USER_ID },
+    });
+
     return { success: true };
   }),
 
@@ -57,10 +99,19 @@ export const stravaRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const tokens = tokenStore.get('default');
-      if (!tokens) {
+      const stravaToken = await prisma.stravaToken.findUnique({
+        where: { userId: DEFAULT_USER_ID },
+      });
+
+      if (!stravaToken) {
         throw new Error('Not connected to Strava');
       }
+
+      const tokens: StravaTokens = {
+        accessToken: stravaToken.accessToken,
+        refreshToken: stravaToken.refreshToken,
+        expiresAt: stravaToken.expiresAt,
+      };
 
       // Get valid access token (refresh if needed)
       const accessToken = await getValidAccessToken(tokens);
@@ -68,12 +119,14 @@ export const stravaRouter = router({
       // Update stored tokens if refreshed
       if (accessToken !== tokens.accessToken) {
         const refreshed = await StravaClient.refreshToken(tokens.refreshToken);
-        const newTokens: StravaTokens = {
-          accessToken: refreshed.access_token,
-          refreshToken: refreshed.refresh_token,
-          expiresAt: refreshed.expires_at,
-        };
-        tokenStore.set('default', newTokens);
+        await prisma.stravaToken.update({
+          where: { userId: DEFAULT_USER_ID },
+          data: {
+            accessToken: refreshed.access_token,
+            refreshToken: refreshed.refresh_token,
+            expiresAt: refreshed.expires_at,
+          },
+        });
       }
 
       const client = new StravaClient(accessToken);
@@ -119,10 +172,19 @@ export const stravaRouter = router({
 
   // Get athlete info
   getAthlete: publicProcedure.query(async () => {
-    const tokens = tokenStore.get('default');
-    if (!tokens) {
+    const stravaToken = await prisma.stravaToken.findUnique({
+      where: { userId: DEFAULT_USER_ID },
+    });
+
+    if (!stravaToken) {
       throw new Error('Not connected to Strava');
     }
+
+    const tokens: StravaTokens = {
+      accessToken: stravaToken.accessToken,
+      refreshToken: stravaToken.refreshToken,
+      expiresAt: stravaToken.expiresAt,
+    };
 
     const accessToken = await getValidAccessToken(tokens);
     const client = new StravaClient(accessToken);

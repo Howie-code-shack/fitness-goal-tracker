@@ -42,3 +42,5 @@ next-env.d.ts
 
 # turbopack
 .turbo
+
+/lib/generated/prisma
