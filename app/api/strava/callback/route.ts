@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { config } from '@/lib/config';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get('code');
   const error = searchParams.get('error');
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = config.app.url;
 
   if (error) {
     // User denied authorization

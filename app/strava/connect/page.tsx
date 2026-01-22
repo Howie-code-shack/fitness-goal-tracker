@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { trpc } from '@/lib/api/trpc-client';
-import { storage } from '@/lib/db/storage';
 
 function StravaConnectContent() {
   const router = useRouter();
@@ -26,11 +25,8 @@ function StravaConnectContent() {
     exchangeTokenMutation.mutate(
       { code },
       {
-        onSuccess: (data) => {
-          // Store tokens and athlete info in localStorage
-          storage.setStravaTokens(data.tokens);
-          storage.setStravaAthlete(data.athlete);
-
+        onSuccess: () => {
+          // Tokens are stored in database by the mutation
           setStatus('success');
 
           // Redirect to dashboard after a short delay

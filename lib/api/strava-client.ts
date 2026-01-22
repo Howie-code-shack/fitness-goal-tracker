@@ -1,4 +1,5 @@
 import type { StravaActivity, StravaTokenResponse, StravaTokens } from '@/types/strava';
+import { config } from '@/lib/config';
 
 const STRAVA_API_BASE = 'https://www.strava.com/api/v3';
 const STRAVA_AUTH_BASE = 'https://www.strava.com/oauth';
@@ -20,8 +21,8 @@ export class StravaClient {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        client_id: process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID,
-        client_secret: process.env.STRAVA_CLIENT_SECRET,
+        client_id: config.strava.clientId,
+        client_secret: config.strava.clientSecret,
         code,
         grant_type: 'authorization_code',
       }),
@@ -45,8 +46,8 @@ export class StravaClient {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        client_id: process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID,
-        client_secret: process.env.STRAVA_CLIENT_SECRET,
+        client_id: config.strava.clientId,
+        client_secret: config.strava.clientSecret,
         refresh_token: refreshToken,
         grant_type: 'refresh_token',
       }),
@@ -133,7 +134,7 @@ export class StravaClient {
    */
   static getAuthorizationUrl(redirectUri: string): string {
     const params = new URLSearchParams({
-      client_id: process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID || '',
+      client_id: config.strava.clientId || '',
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: 'read,activity:read_all',

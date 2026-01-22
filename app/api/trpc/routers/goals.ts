@@ -339,9 +339,12 @@ export const goalsRouter = router({
               }
 
               results.push(result);
-            } catch (activityError: any) {
-              console.error(`[importActivities] Failed to import activity ${activity.id}:`, activityError.message);
-              errors.push({ activity: activity.id, error: activityError.message });
+            } catch (activityError: unknown) {
+              const errorMessage = activityError instanceof Error
+                ? activityError.message
+                : String(activityError);
+              console.error(`[importActivities] Failed to import activity ${activity.id}:`, errorMessage);
+              errors.push({ activity: activity.id, error: errorMessage });
             }
           }
 
@@ -365,7 +368,7 @@ export const goalsRouter = router({
         const response: {
           imported: number;
           totalActivities: number;
-          errors?: Array<{ activity: string; error: any }>;
+          errors?: Array<{ activity: string; error: string }>;
         } = {
           imported: transactionResult.results.length,
           totalActivities: transactionResult.totalCount,
@@ -377,8 +380,9 @@ export const goalsRouter = router({
         }
 
         return response;
-      } catch (error: any) {
-        console.error(`[importActivities] Transaction failed:`, error.message);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`[importActivities] Transaction failed:`, errorMessage);
         throw error;
       }
     }),

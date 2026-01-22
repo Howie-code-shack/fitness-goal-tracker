@@ -1,7 +1,6 @@
 'use client';
 
 import { trpc } from '@/lib/api/trpc-client';
-import { storage } from '@/lib/db/storage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -22,8 +21,7 @@ export function StravaConnect({ onSync }: StravaConnectProps) {
   const { data: authUrl } = trpc.strava.getAuthUrl.useQuery();
   const utils = trpc.useUtils();
   const disconnectMutation = trpc.strava.disconnect.useMutation();
-  const syncMutation = trpc.strava.syncActivities.useMutation();
-  const importActivitiesMutation = trpc.goals.importActivities.useMutation();
+  const syncAndImportMutation = trpc.strava.syncAndImportActivities.useMutation();
 
   const handleConnect = () => {
     if (authUrl) {
@@ -34,7 +32,7 @@ export function StravaConnect({ onSync }: StravaConnectProps) {
   const handleDisconnect = () => {
     disconnectMutation.mutate(undefined, {
       onSuccess: () => {
-        storage.clearStravaTokens();
+        // Tokens are deleted from database by the mutation
         // Invalidate queries to refresh connection status
         utils.strava.isConnected.invalidate();
         utils.strava.getAthlete.invalidate();
@@ -47,36 +45,15 @@ export function StravaConnect({ onSync }: StravaConnectProps) {
     const yearStart = new Date(new Date().getFullYear(), 0, 1);
     const after = Math.floor(yearStart.getTime() / 1000);
 
-    syncMutation.mutate(
+    syncAndImportMutation.mutate(
       { after },
       {
         onSuccess: (data) => {
-          console.log(`Fetched ${data.count} activities from Strava`, data.activities);
-
-          // Import the activities into the goals system
-          if (data.activities.length > 0) {
-            console.log('[Frontend] About to call importActivities with:', {
-              count: data.activities.length,
-              firstActivity: data.activities[0],
-              allActivities: data.activities
-            });
-
-            importActivitiesMutation.mutate(data.activities, {
-              onSuccess: (importResult) => {
-                console.log(`[Frontend] Import succeeded:`, importResult);
-                onSync?.();
-              },
-              onError: (error) => {
-                console.error('[Frontend] Import failed:', error);
-              },
-            });
-          } else {
-            console.log('[Frontend] No activities to import');
-            onSync?.();
-          }
+          console.log(`Synced and imported ${data.imported} of ${data.synced} activities from Strava`);
+          onSync?.();
         },
         onError: (error) => {
-          console.error('Failed to sync activities from Strava:', error);
+          console.error('Failed to sync and import activities from Strava:', error);
         },
       }
     );
@@ -164,10 +141,10 @@ export function StravaConnect({ onSync }: StravaConnectProps) {
           <div className="flex gap-2">
             <Button
               onClick={handleSync}
-              disabled={syncMutation.isPending}
+              disabled={syncAndImportMutation.isPending}
               size="lg"
             >
-              {syncMutation.isPending ? 'Syncing...' : 'Sync Activities'}
+              {syncAndImportMutation.isPending ? 'Syncing...' : 'Sync Activities'}
             </Button>
             <Button
               onClick={handleDisconnect}
@@ -180,49 +157,24 @@ export function StravaConnect({ onSync }: StravaConnectProps) {
           </div>
         </div>
 
-        {syncMutation.isSuccess && !importActivitiesMutation.isPending && !importActivitiesMutation.isSuccess && (
-          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              Fetched {syncMutation.data.count} activities from Strava.
-              {syncMutation.data.count === 0 ? ' No activities to import.' : ' Importing...'}
-            </p>
-          </div>
-        )}
-
-        {importActivitiesMutation.isPending && (
-          <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              Importing activities to database...
-            </p>
-          </div>
-        )}
-
-        {importActivitiesMutation.isSuccess && importActivitiesMutation.data && (
+        {syncAndImportMutation.isSuccess && syncAndImportMutation.data && (
           <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
             <p className="text-sm text-green-800 dark:text-green-200">
-              ✓ Successfully imported {importActivitiesMutation.data.imported} activities.
-              Total in database: {importActivitiesMutation.data.totalActivities}
+              ✓ Successfully synced {syncAndImportMutation.data.synced} activities and imported {syncAndImportMutation.data.imported} to database.
+              Total activities: {syncAndImportMutation.data.totalActivities}
             </p>
-            {('errors' in importActivitiesMutation.data) && (importActivitiesMutation.data as any).errors?.length > 0 && (
+            {'errors' in syncAndImportMutation.data && syncAndImportMutation.data.errors && syncAndImportMutation.data.errors.length > 0 && (
               <p className="text-sm text-orange-800 dark:text-orange-200 mt-2">
-                ⚠ {(importActivitiesMutation.data as any).errors.length} activities failed to import. Check console for details.
+                ⚠ {syncAndImportMutation.data.errors.length} activities failed to import. Check console for details.
               </p>
             )}
           </div>
         )}
 
-        {syncMutation.isError && (
+        {syncAndImportMutation.isError && (
           <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
             <p className="text-sm text-red-800 dark:text-red-200">
-              ✗ Failed to sync activities from Strava: {syncMutation.error.message}
-            </p>
-          </div>
-        )}
-
-        {importActivitiesMutation.isError && (
-          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-            <p className="text-sm text-red-800 dark:text-red-200">
-              ✗ Failed to import activities to database: {importActivitiesMutation.error.message}
+              ✗ Failed to sync activities from Strava: {syncAndImportMutation.error.message}
             </p>
           </div>
         )}

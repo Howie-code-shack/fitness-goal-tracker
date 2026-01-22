@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 export function GoalSetup({ onComplete }: { onComplete: () => void }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const updateGoalsMutation = trpc.goals.updateGoals.useMutation();
 
   const {
@@ -29,11 +30,14 @@ export function GoalSetup({ onComplete }: { onComplete: () => void }) {
   });
 
   const onSubmit = async (data: UpdateGoalsInput) => {
+    setError(null);
     setIsSubmitting(true);
     try {
       await updateGoalsMutation.mutateAsync(data);
       onComplete();
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to set goals. Please try again.';
+      setError(message);
       console.error('Failed to set goals:', error);
     } finally {
       setIsSubmitting(false);
@@ -85,6 +89,14 @@ export function GoalSetup({ onComplete }: { onComplete: () => void }) {
                 )}
               </div>
             ))}
+
+            {error && (
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <p className="text-sm text-red-800 dark:text-red-200">
+                  {error}
+                </p>
+              </div>
+            )}
 
             <Button
               type="submit"
