@@ -68,7 +68,7 @@ model Goal {
   id         String   @id @default(cuid())
   userId     String
   type       String   // running, cycling, swimming
-  target     Float
+  target     Float    // Unit: meters for swimming, km for running/cycling
   year       Int
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
@@ -82,7 +82,7 @@ model Activity {
   id        String   @id @default(cuid())
   userId    String
   goalType  String   // running, cycling, swimming
-  distance  Float
+  distance  Float    // Unit: meters for swimming, km for running/cycling
   date      DateTime
   notes     String?
   stravaId  String?  @unique // For deduplication from Strava

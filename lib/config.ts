@@ -16,10 +16,6 @@ interface Config {
     clientSecret: string;
     appUrl: string;
   };
-  database: {
-    url: string;
-    directUrl: string;
-  };
   app: {
     url: string;
   };
@@ -42,6 +38,7 @@ function getOptionalEnv(key: string, defaultValue: string): string {
 
 /**
  * Validates and exports application configuration
+ * Note: Database config (POSTGRES_URL) is managed by Prisma schema, not validated here
  */
 export const config: Config = {
   auth: {
@@ -53,10 +50,6 @@ export const config: Config = {
     clientId: getRequiredEnv('NEXT_PUBLIC_STRAVA_CLIENT_ID'),
     clientSecret: getRequiredEnv('STRAVA_CLIENT_SECRET'),
     appUrl: getRequiredEnv('NEXT_PUBLIC_APP_URL'),
-  },
-  database: {
-    url: getRequiredEnv('POSTGRES_PRISMA_URL'),
-    directUrl: getRequiredEnv('POSTGRES_URL_NON_POOLING'),
   },
   app: {
     url: getRequiredEnv('NEXT_PUBLIC_APP_URL'),
@@ -77,8 +70,6 @@ export function validateConfig(): void {
       config.strava.clientId,
       config.strava.clientSecret,
       config.strava.appUrl,
-      config.database.url,
-      config.database.directUrl,
       config.app.url,
     ];
 

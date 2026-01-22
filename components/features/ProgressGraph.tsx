@@ -15,6 +15,9 @@ export function ProgressGraph({ goalType }: ProgressGraphProps) {
   const { data: stats } = trpc.goals.getProgressStats.useQuery({ goalType });
 
   const goal = goals?.find((g) => g.type === goalType);
+  const isSwimming = goalType === 'swimming';
+  const unit = isSwimming ? 'm' : 'km';
+  const decimals = isSwimming ? 0 : 1;
 
   const chartData = useMemo(() => {
     if (!goal || !stats) return [];
@@ -72,7 +75,7 @@ export function ProgressGraph({ goalType }: ProgressGraphProps) {
             <YAxis
               stroke="#6B7280"
               style={{ fontSize: '0.875rem' }}
-              label={{ value: 'Distance (km)', angle: -90, position: 'insideLeft', style: { fill: '#6B7280' } }}
+              label={{ value: `Distance (${unit})`, angle: -90, position: 'insideLeft', style: { fill: '#6B7280' } }}
             />
             <Tooltip
               contentStyle={{
@@ -81,7 +84,7 @@ export function ProgressGraph({ goalType }: ProgressGraphProps) {
                 borderRadius: '0.5rem',
                 color: '#F9FAFB',
               }}
-              formatter={(value?: number) => [value !== undefined ? `${value.toFixed(1)} km` : '', '']}
+              formatter={(value?: number) => [value !== undefined ? `${value.toFixed(decimals)} ${unit}` : '', '']}
             />
             <Legend
               wrapperStyle={{ paddingTop: '1rem' }}

@@ -118,6 +118,7 @@ export const goalsRouter = router({
     }),
 
   // Add an activity
+  // Unit convention: distance input must be in meters for swimming, km for running/cycling
   addActivity: protectedProcedure
     .input(createActivitySchema)
     .mutation(async ({ ctx, input }) => {
@@ -125,7 +126,7 @@ export const goalsRouter = router({
         data: {
           userId: ctx.userId,
           goalType: input.goalType,
-          distance: input.distance,
+          distance: input.distance, // Stored as-is: meters for swimming, km for running/cycling
           date: new Date(input.date),
           notes: input.notes,
         },
