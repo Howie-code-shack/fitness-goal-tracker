@@ -2,6 +2,7 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/features/ThemeToggle';
 
 export function UserMenu() {
   const { data: session } = useSession();
@@ -12,6 +13,7 @@ export function UserMenu() {
 
   return (
     <div className="flex items-center gap-3">
+      <ThemeToggle />
       {session.user.image && (
         <img
           src={session.user.image}

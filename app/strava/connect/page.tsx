@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { trpc } from '@/lib/api/trpc-client';
+import { ThemeToggle } from '@/components/features/ThemeToggle';
 
 function StravaConnectContent() {
   const router = useRouter();
@@ -43,7 +44,10 @@ function StravaConnectContent() {
   }, [searchParams]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
         {status === 'connecting' && (
           <div className="text-center">

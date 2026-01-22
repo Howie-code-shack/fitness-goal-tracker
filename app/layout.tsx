@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { TRPCProvider } from "@/lib/api/trpc-provider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { validateConfig } from "@/lib/config";
 
 // Validate environment configuration on app startup
@@ -18,11 +19,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
-        <SessionProvider>
-          <TRPCProvider>{children}</TRPCProvider>
-        </SessionProvider>
+        <ThemeProvider>
+          <SessionProvider>
+            <TRPCProvider>{children}</TRPCProvider>
+          </SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

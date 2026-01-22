@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ThemeToggle } from '@/components/features/ThemeToggle';
 
 export function GoalSetup({ onComplete }: { onComplete: () => void }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,7 +52,10 @@ export function GoalSetup({ onComplete }: { onComplete: () => void }) {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <Card className="max-w-2xl w-full">
         <CardHeader className="text-center">
           <CardTitle className="text-4xl font-bold">
