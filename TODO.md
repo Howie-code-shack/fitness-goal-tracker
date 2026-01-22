@@ -32,6 +32,12 @@
 
 ## 🟡 Medium Priority (Features & UX)
 
+- [ ] **Add email/password and magic link authentication**
+  - Currently only Google OAuth is available
+  - Add Credentials provider for email/password sign up
+  - Add Email provider for magic link (passwordless) sign in
+  - Requires email service (Resend, SendGrid, etc.)
+
 - [x] **Add shadcn/ui components** ✅
   - Initialized shadcn/ui with Button, Input, Label, Card components
   - Updated GoalSetup, StravaConnect, GoalCard, ProgressGraph to use shadcn

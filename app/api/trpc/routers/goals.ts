@@ -61,11 +61,13 @@ export const goalsRouter = router({
           },
         });
 
+        const progress = result._sum.distance || 0;
+
         return {
           id: goal.id,
           type: goal.type,
           yearlyTarget: goal.target,
-          currentProgress: result._sum.distance || 0,
+          currentProgress: progress,
           year: goal.year,
         };
       })
@@ -285,53 +287,100 @@ export const goalsRouter = router({
       )
     )
     .mutation(async ({ ctx, input }) => {
-      // Upsert activities (use stravaId for deduplication)
-      const results = await Promise.all(
-        input.map(async (activity) => {
-          const stravaId = activity.id.startsWith('strava-')
-            ? activity.id.replace('strava-', '')
-            : null;
+      if (!input || input.length === 0) {
+        return {
+          imported: 0,
+          totalActivities: 0,
+        };
+      }
 
-          if (stravaId) {
-            // Upsert by stravaId for Strava activities
-            return prisma.activity.upsert({
-              where: { stravaId },
-              update: {
-                distance: activity.distance,
-                date: new Date(activity.date),
-                notes: activity.notes,
-              },
-              create: {
-                userId: ctx.userId,
-                goalType: activity.goalType,
-                distance: activity.distance,
-                date: new Date(activity.date),
-                notes: activity.notes,
-                stravaId,
-              },
-            });
-          } else {
-            // Create new activity for non-Strava sources
-            return prisma.activity.create({
-              data: {
-                userId: ctx.userId,
-                goalType: activity.goalType,
-                distance: activity.distance,
-                date: new Date(activity.date),
-                notes: activity.notes,
-              },
-            });
+      try {
+        // Wrap in explicit transaction to ensure commit
+        const transactionResult = await prisma.$transaction(async (tx) => {
+          const results = [];
+          const errors = [];
+
+          for (const activity of input) {
+            const stravaId = activity.id.startsWith('strava-')
+              ? activity.id.replace('strava-', '')
+              : null;
+
+            try {
+              let result;
+              if (stravaId) {
+                // Upsert by stravaId for Strava activities
+                result = await tx.activity.upsert({
+                  where: { stravaId },
+                  update: {
+                    distance: activity.distance,
+                    date: new Date(activity.date),
+                    notes: activity.notes || null,
+                  },
+                  create: {
+                    userId: ctx.userId,
+                    goalType: activity.goalType,
+                    distance: activity.distance,
+                    date: new Date(activity.date),
+                    notes: activity.notes || null,
+                    stravaId,
+                  },
+                });
+              } else {
+                // Create new activity for non-Strava sources
+                result = await tx.activity.create({
+                  data: {
+                    userId: ctx.userId,
+                    goalType: activity.goalType,
+                    distance: activity.distance,
+                    date: new Date(activity.date),
+                    notes: activity.notes || null,
+                  },
+                });
+              }
+
+              results.push(result);
+            } catch (activityError: any) {
+              console.error(`[importActivities] Failed to import activity ${activity.id}:`, activityError.message);
+              errors.push({ activity: activity.id, error: activityError.message });
+            }
           }
-        })
-      );
 
-      const totalCount = await prisma.activity.count({
-        where: { userId: ctx.userId },
-      });
+          // Count activities for this user
+          const totalCount = await tx.activity.count({
+            where: { userId: ctx.userId },
+          });
 
-      return {
-        imported: results.length,
-        totalActivities: totalCount,
-      };
+          // Return from transaction
+          return {
+            results,
+            errors,
+            totalCount,
+          };
+        }, {
+          maxWait: 10000, // 10 seconds
+          timeout: 30000, // 30 seconds
+        });
+
+        // Create response
+        const response: {
+          imported: number;
+          totalActivities: number;
+          errors?: Array<{ activity: string; error: any }>;
+        } = {
+          imported: transactionResult.results.length,
+          totalActivities: transactionResult.totalCount,
+        };
+
+        if (transactionResult.errors.length > 0) {
+          response.errors = transactionResult.errors;
+          console.error(`[importActivities] ${transactionResult.errors.length} activities failed to import`);
+        }
+
+        return response;
+      } catch (error: any) {
+        console.error(`[importActivities] Transaction failed:`, error.message);
+        throw error;
+      }
     }),
+
 });

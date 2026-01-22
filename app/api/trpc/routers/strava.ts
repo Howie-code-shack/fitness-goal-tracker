@@ -136,8 +136,6 @@ export const stravaRouter = router({
             distance,
             date: activity.start_date,
             notes: activity.name,
-            source: 'strava',
-            stravaId: activity.id,
           };
         })
         .filter((activity): activity is NonNullable<typeof activity> => activity !== null);
@@ -150,23 +148,42 @@ export const stravaRouter = router({
 
   // Get athlete info
   getAthlete: protectedProcedure.query(async ({ ctx }) => {
-    const stravaToken = await prisma.stravaToken.findUnique({
-      where: { userId: ctx.userId },
-    });
+    try {
+      const stravaToken = await prisma.stravaToken.findUnique({
+        where: { userId: ctx.userId },
+      });
 
-    if (!stravaToken) {
-      throw new Error('Not connected to Strava');
+      if (!stravaToken) {
+        return null;
+      }
+
+      const tokens: StravaTokens = {
+        accessToken: stravaToken.accessToken,
+        refreshToken: stravaToken.refreshToken,
+        expiresAt: stravaToken.expiresAt,
+      };
+
+      const accessToken = await getValidAccessToken(tokens);
+
+      // Update tokens in DB if they were refreshed
+      if (accessToken !== tokens.accessToken) {
+        const refreshed = await StravaClient.refreshToken(tokens.refreshToken);
+        await prisma.stravaToken.update({
+          where: { userId: ctx.userId },
+          data: {
+            accessToken: refreshed.access_token,
+            refreshToken: refreshed.refresh_token,
+            expiresAt: refreshed.expires_at,
+          },
+        });
+      }
+
+      const client = new StravaClient(accessToken);
+      return client.getAthlete();
+    } catch (error) {
+      console.error(`[getAthlete] Error:`, error);
+      // Return null instead of throwing - athlete info is optional
+      return null;
     }
-
-    const tokens: StravaTokens = {
-      accessToken: stravaToken.accessToken,
-      refreshToken: stravaToken.refreshToken,
-      expiresAt: stravaToken.expiresAt,
-    };
-
-    const accessToken = await getValidAccessToken(tokens);
-    const client = new StravaClient(accessToken);
-
-    return client.getAthlete();
   }),
 });
