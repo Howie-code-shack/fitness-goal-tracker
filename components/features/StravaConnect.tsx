@@ -3,12 +3,16 @@
 import { trpc } from '@/lib/api/trpc-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
 
 interface StravaConnectProps {
-  onSync?: () => void;
+  lastSyncedAt?: Date | string | null;
+  manualSync?: () => void;
+  isAutoSyncing?: boolean;
 }
 
-export function StravaConnect({ onSync }: StravaConnectProps) {
+export function StravaConnect({ lastSyncedAt, manualSync, isAutoSyncing }: StravaConnectProps) {
   // Use database query for connection status (not localStorage)
   const { data: isConnected, isLoading: isLoadingConnection } = trpc.strava.isConnected.useQuery();
 
@@ -21,7 +25,6 @@ export function StravaConnect({ onSync }: StravaConnectProps) {
   const { data: authUrl } = trpc.strava.getAuthUrl.useQuery();
   const utils = trpc.useUtils();
   const disconnectMutation = trpc.strava.disconnect.useMutation();
-  const syncAndImportMutation = trpc.strava.syncAndImportActivities.useMutation();
 
   const handleConnect = () => {
     if (authUrl) {
@@ -32,31 +35,17 @@ export function StravaConnect({ onSync }: StravaConnectProps) {
   const handleDisconnect = () => {
     disconnectMutation.mutate(undefined, {
       onSuccess: () => {
-        // Tokens are deleted from database by the mutation
+        toast.success('Disconnected from Strava');
         // Invalidate queries to refresh connection status
         utils.strava.isConnected.invalidate();
         utils.strava.getAthlete.invalidate();
       },
+      onError: (error) => {
+        toast.error('Failed to disconnect', {
+          description: error.message,
+        });
+      },
     });
-  };
-
-  const handleSync = () => {
-    // Get activities from the start of current year
-    const yearStart = new Date(new Date().getFullYear(), 0, 1);
-    const after = Math.floor(yearStart.getTime() / 1000);
-
-    syncAndImportMutation.mutate(
-      { after },
-      {
-        onSuccess: (data) => {
-          console.log(`Synced and imported ${data.imported} of ${data.synced} activities from Strava`);
-          onSync?.();
-        },
-        onError: (error) => {
-          console.error('Failed to sync and import activities from Strava:', error);
-        },
-      }
-    );
   };
 
   // Show loading state while checking connection
@@ -134,17 +123,23 @@ export function StravaConnect({ onSync }: StravaConnectProps) {
                 {athlete ? `${athlete.firstname} ${athlete.lastname}` : 'Strava Connected'}
               </h3>
               <p className="text-sm text-muted-foreground">
-                {athlete?.username && `@${athlete.username}`}
+                {lastSyncedAt ? (
+                  `Last synced ${formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: true })}`
+                ) : athlete?.username ? (
+                  `@${athlete.username}`
+                ) : (
+                  'Auto-sync enabled'
+                )}
               </p>
             </div>
           </div>
           <div className="flex gap-2">
             <Button
-              onClick={handleSync}
-              disabled={syncAndImportMutation.isPending}
+              onClick={manualSync}
+              disabled={isAutoSyncing || disconnectMutation.isPending}
               size="lg"
             >
-              {syncAndImportMutation.isPending ? 'Syncing...' : 'Sync Activities'}
+              {isAutoSyncing ? 'Syncing...' : 'Sync Activities'}
             </Button>
             <Button
               onClick={handleDisconnect}
@@ -156,28 +151,6 @@ export function StravaConnect({ onSync }: StravaConnectProps) {
             </Button>
           </div>
         </div>
-
-        {syncAndImportMutation.isSuccess && syncAndImportMutation.data && (
-          <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-            <p className="text-sm text-green-800 dark:text-green-200">
-              ✓ Successfully synced {syncAndImportMutation.data.synced} activities and imported {syncAndImportMutation.data.imported} to database.
-              Total activities: {syncAndImportMutation.data.totalActivities}
-            </p>
-            {'errors' in syncAndImportMutation.data && syncAndImportMutation.data.errors && syncAndImportMutation.data.errors.length > 0 && (
-              <p className="text-sm text-orange-800 dark:text-orange-200 mt-2">
-                ⚠ {syncAndImportMutation.data.errors.length} activities failed to import. Check console for details.
-              </p>
-            )}
-          </div>
-        )}
-
-        {syncAndImportMutation.isError && (
-          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-            <p className="text-sm text-red-800 dark:text-red-200">
-              ✗ Failed to sync activities from Strava: {syncAndImportMutation.error.message}
-            </p>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

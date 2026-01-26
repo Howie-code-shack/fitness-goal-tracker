@@ -254,6 +254,12 @@ export const stravaRouter = router({
 
       // Import activities directly (if any)
       if (mappedActivities.length === 0) {
+        // Still update lastSyncedAt even when no new activities
+        await prisma.stravaToken.update({
+          where: { userId: ctx.userId },
+          data: { lastSyncedAt: new Date() },
+        });
+
         return {
           synced: 0,
           imported: 0,
@@ -301,6 +307,12 @@ export const stravaRouter = router({
         }
 
         const totalCount = await tx.activity.count({ where: { userId: ctx.userId } });
+
+        // Update lastSyncedAt timestamp
+        await tx.stravaToken.update({
+          where: { userId: ctx.userId },
+          data: { lastSyncedAt: new Date() },
+        });
 
         return { imported: imported.length, totalCount, errors };
       });
@@ -365,5 +377,14 @@ export const stravaRouter = router({
       // Return null instead of throwing - athlete info is optional
       return null;
     }
+  }),
+
+  // Get last sync timestamp
+  getLastSyncedAt: protectedProcedure.query(async ({ ctx }) => {
+    const token = await prisma.stravaToken.findUnique({
+      where: { userId: ctx.userId },
+      select: { lastSyncedAt: true },
+    });
+    return token?.lastSyncedAt || null;
   }),
 });

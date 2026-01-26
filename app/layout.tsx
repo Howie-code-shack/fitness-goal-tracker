@@ -4,6 +4,7 @@ import { TRPCProvider } from "@/lib/api/trpc-provider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { validateConfig } from "@/lib/config";
+import { Toaster } from "sonner";
 
 // Validate environment configuration on app startup
 validateConfig();
@@ -26,6 +27,7 @@ export default function RootLayout({
             <TRPCProvider>{children}</TRPCProvider>
           </SessionProvider>
         </ThemeProvider>
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

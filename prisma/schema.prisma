@@ -94,12 +94,13 @@ model Activity {
 }
 
 model StravaToken {
-  id           String   @id @default(cuid())
-  userId       String   @unique
+  id           String    @id @default(cuid())
+  userId       String    @unique
   accessToken  String
   refreshToken String
   expiresAt    Int
   athleteId    String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  updatedAt    DateTime @updatedAt
+  lastSyncedAt DateTime? // Track last successful sync
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt    DateTime  @updatedAt
 }

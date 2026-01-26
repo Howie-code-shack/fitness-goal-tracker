@@ -7,10 +7,15 @@ import { UserMenu } from './UserMenu';
 import { useState } from 'react';
 import { trpc } from '@/lib/api/trpc-client';
 import type { GoalType } from '@/types';
+import { useAutoStravaSync } from '@/lib/hooks/use-auto-strava-sync';
 
 export function Dashboard() {
   const [selectedGoal, setSelectedGoal] = useState<GoalType>('running');
-  const utils = trpc.useUtils();
+
+  // Auto-sync Strava activities
+  const { isAutoSyncing, lastSyncedAt, manualSync } = useAutoStravaSync({
+    enabled: true,
+  });
 
   // Fetch all progress stats to determine the most urgent activity
   const { data: allStats } = trpc.goals.getAllProgressStats.useQuery();
@@ -20,11 +25,6 @@ export function Dashboard() {
     { key: 'cycling' as const, label: 'Cycling', icon: '🚴', color: 'bg-green-500' },
     { key: 'swimming' as const, label: 'Swimming', icon: '🏊', color: 'bg-purple-500' },
   ];
-
-  const handleSync = () => {
-    // Invalidate queries to refetch data after sync
-    utils.goals.invalidate();
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8">
@@ -44,7 +44,11 @@ export function Dashboard() {
 
         {/* Strava Connection */}
         <div className="mb-8">
-          <StravaConnect onSync={handleSync} />
+          <StravaConnect
+            lastSyncedAt={lastSyncedAt}
+            manualSync={manualSync}
+            isAutoSyncing={isAutoSyncing}
+          />
         </div>
 
         {/* Goal Cards Grid */}

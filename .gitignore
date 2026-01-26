@@ -44,3 +44,8 @@ next-env.d.ts
 .turbo
 
 /lib/generated/prisma
+
+# docs
+
+DOMAIN_CHANGE_CHECKLIST.md
+LOCAL_DEVELOPMENT.md

@@ -28,31 +28,43 @@ A modern Single Page Application for tracking your annual fitness goals across r
 
 ## Getting Started
 
-### Prerequisites
+### For Local Development
 
-- Node.js 18+ installed
-- npm or yarn
+**📖 See the complete setup guide: [LOCAL_DEVELOPMENT.md](./LOCAL_DEVELOPMENT.md)**
 
-### Installation
+#### Quick Start (3 commands)
 
-1. Install dependencies:
 ```bash
-npm install
-```
+# 1. Run the automated setup script
+./scripts/setup.sh
 
-2. Set up environment variables:
-```bash
-cp .env.local.example .env.local
-```
+# 2. Configure .env.local (follow prompts from setup script)
+# - Generate AUTH_SECRET
+# - Add Google OAuth credentials
+# - Add Strava credentials (optional)
 
-Then edit `.env.local` and add your Strava API credentials (see Strava Integration section below).
-
-3. Run the development server:
-```bash
+# 3. Start the dev server
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+That's it! Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+#### What the setup script does:
+
+- ✅ Checks prerequisites (Node, Docker)
+- ✅ Installs npm dependencies
+- ✅ Creates `.env.local` from template
+- ✅ Starts PostgreSQL in Docker
+- ✅ Runs database migrations
+- ✅ Guides you through configuration
+
+#### Manual Setup
+
+If you prefer manual setup, see [LOCAL_DEVELOPMENT.md](./LOCAL_DEVELOPMENT.md) for detailed step-by-step instructions.
+
+### For Production Deployment
+
+This app is designed to deploy on Vercel with Vercel Postgres. See [DEPLOYMENT.md](./DEPLOYMENT.md) for details.
 
 ## Usage
 
