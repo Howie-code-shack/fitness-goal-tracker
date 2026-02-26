@@ -126,6 +126,14 @@ export const stravaRouter = router({
 
       const client = new StravaClient(accessToken);
 
+      // Get enabled goal types for this user
+      const currentYear = new Date().getFullYear();
+      const enabledGoals = await prisma.goal.findMany({
+        where: { userId: ctx.userId, year: currentYear },
+        select: { type: true },
+      });
+      const enabledTypes = new Set(enabledGoals.map((g) => g.type));
+
       // Fetch activities (default: last 200 activities)
       const activities = await client.getActivities({
         per_page: 200,
@@ -133,13 +141,13 @@ export const stravaRouter = router({
         before: input.before,
       });
 
-      // Map Strava activities to our format
+      // Map Strava activities to our format, filtering to enabled sports only
       const mappedActivities = activities
         .map((activity) => {
           const goalType = ACTIVITY_TYPE_MAPPING[activity.type] || ACTIVITY_TYPE_MAPPING[activity.sport_type];
 
-          if (!goalType) {
-            return null; // Skip activities we don't track
+          if (!goalType || !enabledTypes.has(goalType)) {
+            return null; // Skip activities we don't track or that are disabled
           }
 
           // Swimming is stored in meters, running/cycling in km
@@ -222,6 +230,14 @@ export const stravaRouter = router({
 
       const client = new StravaClient(accessToken);
 
+      // Get enabled goal types for this user
+      const currentYear = new Date().getFullYear();
+      const enabledGoals = await prisma.goal.findMany({
+        where: { userId: ctx.userId, year: currentYear },
+        select: { type: true },
+      });
+      const enabledTypes = new Set(enabledGoals.map((g) => g.type));
+
       // Fetch activities
       const activities = await client.getActivities({
         per_page: 200,
@@ -229,12 +245,12 @@ export const stravaRouter = router({
         before: input.before,
       });
 
-      // Map Strava activities to our format
+      // Map Strava activities to our format, filtering to enabled sports only
       const mappedActivities = activities
         .map((activity) => {
           const goalType = ACTIVITY_TYPE_MAPPING[activity.type] || ACTIVITY_TYPE_MAPPING[activity.sport_type];
 
-          if (!goalType) {
+          if (!goalType || !enabledTypes.has(goalType)) {
             return null;
           }
 

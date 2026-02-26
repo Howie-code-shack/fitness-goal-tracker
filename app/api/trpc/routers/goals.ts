@@ -85,10 +85,22 @@ export const goalsRouter = router({
         { type: 'running', target: input.running },
         { type: 'cycling', target: input.cycling },
         { type: 'swimming', target: input.swimming },
-      ];
+      ] as const;
 
       const results = await Promise.all(
         goalTypes.map(async ({ type, target }) => {
+          if (target === null) {
+            // Sport disabled — delete the goal record
+            await prisma.goal.deleteMany({
+              where: {
+                userId: ctx.userId,
+                type,
+                year: currentYear,
+              },
+            });
+            return null;
+          }
+
           return prisma.goal.upsert({
             where: {
               userId_type_year: {
@@ -108,13 +120,15 @@ export const goalsRouter = router({
         })
       );
 
-      return results.map((goal) => ({
-        id: goal.id,
-        type: goal.type,
-        yearlyTarget: goal.target,
-        currentProgress: 0,
-        year: goal.year,
-      }));
+      return results
+        .filter((goal) => goal !== null)
+        .map((goal) => ({
+          id: goal.id,
+          type: goal.type,
+          yearlyTarget: goal.target,
+          currentProgress: 0,
+          year: goal.year,
+        }));
     }),
 
   // Add an activity

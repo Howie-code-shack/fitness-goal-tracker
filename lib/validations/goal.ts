@@ -43,11 +43,15 @@ export const createActivitySchema = z.object({
 });
 
 // Unit convention: swimming targets in meters, running/cycling in km
+// null means the sport is disabled (goal will be deleted)
 export const updateGoalsSchema = z.object({
-  running: z.number().positive().min(1, 'Running target must be at least 1 km').max(10000, 'Running target cannot exceed 10,000 km'),
-  cycling: z.number().positive().min(1, 'Cycling target must be at least 1 km').max(50000, 'Cycling target cannot exceed 50,000 km'),
-  swimming: z.number().positive().min(100, 'Swimming target must be at least 100 meters').max(1000000, 'Swimming target cannot exceed 1,000,000 meters'),
-});
+  running: z.number().positive().min(1, 'Running target must be at least 1 km').max(10000, 'Running target cannot exceed 10,000 km').nullable(),
+  cycling: z.number().positive().min(1, 'Cycling target must be at least 1 km').max(50000, 'Cycling target cannot exceed 50,000 km').nullable(),
+  swimming: z.number().positive().min(100, 'Swimming target must be at least 100 meters').max(1000000, 'Swimming target cannot exceed 1,000,000 meters').nullable(),
+}).refine(
+  (data) => data.running !== null || data.cycling !== null || data.swimming !== null,
+  { message: 'At least one sport must be enabled' }
+);
 
 export type CreateGoalInput = z.infer<typeof createGoalSchema>;
 export type Goal = z.infer<typeof goalSchema>;

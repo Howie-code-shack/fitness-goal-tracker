@@ -25,9 +25,9 @@ export default function Home() {
 
   if (editing && goals) {
     const initialValues = {
-      running: goals.find((g) => g.type === 'running')?.yearlyTarget ?? 400,
-      cycling: goals.find((g) => g.type === 'cycling')?.yearlyTarget ?? 4000,
-      swimming: goals.find((g) => g.type === 'swimming')?.yearlyTarget ?? 80000,
+      running: goals.find((g) => g.type === 'running')?.yearlyTarget ?? null,
+      cycling: goals.find((g) => g.type === 'cycling')?.yearlyTarget ?? null,
+      swimming: goals.find((g) => g.type === 'swimming')?.yearlyTarget ?? null,
     };
 
     return (
