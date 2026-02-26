@@ -260,6 +260,42 @@ export const goalsRouter = router({
     return { stats, mostUrgent: urgentGoalType };
   }),
 
+  // Get monthly breakdown for a goal type (current year)
+  getMonthlyBreakdown: protectedProcedure
+    .input(z.object({ goalType: goalTypeSchema }))
+    .query(async ({ ctx, input }) => {
+      const currentYear = new Date().getFullYear();
+      const yearStart = new Date(currentYear, 0, 1);
+      const yearEnd = new Date(currentYear + 1, 0, 1);
+
+      const activities = await prisma.activity.findMany({
+        where: {
+          userId: ctx.userId,
+          goalType: input.goalType,
+          date: {
+            gte: yearStart,
+            lt: yearEnd,
+          },
+        },
+        select: {
+          distance: true,
+          date: true,
+        },
+      });
+
+      // Group by month
+      const monthlyTotals = new Array(12).fill(0);
+      for (const activity of activities) {
+        const month = activity.date.getMonth();
+        monthlyTotals[month] += activity.distance;
+      }
+
+      return monthlyTotals.map((total, month) => ({
+        month,
+        total,
+      }));
+    }),
+
   // Check if goals are set up
   hasGoals: protectedProcedure.query(async ({ ctx }) => {
     const currentYear = new Date().getFullYear();

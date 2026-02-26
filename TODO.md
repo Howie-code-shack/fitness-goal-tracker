@@ -45,9 +45,11 @@
 - [ ] **Add activity editing and deletion**
   - Currently can only add activities, not modify or remove them
 
-- [ ] **Implement automatic Strava sync**
-  - Background sync on page load or scheduled intervals
+- [x] **Implement automatic Strava sync** ✅
+  - Background sync on page load and 15-minute intervals (use-auto-strava-sync hook)
   - Show last sync timestamp
+  - Rate limiting (5-min minimum between syncs)
+  - Auto re-auth prompts on expired tokens
 
 - [ ] **Add weekly/monthly progress views**
   - Currently only shows yearly totals
@@ -59,9 +61,10 @@
 
 ## 🟢 Nice to Have (Enhancements)
 
-- [ ] **Add PWA support**
-  - Service worker for offline access
-  - Install prompt for mobile
+- [x] **Add PWA support** ✅
+  - Web app manifest with app icons (192/512)
+  - Service worker with network-first caching
+  - Apple/Android install support and meta tags
 
 - [ ] **Add data export functionality**
   - Export activities to CSV/JSON
