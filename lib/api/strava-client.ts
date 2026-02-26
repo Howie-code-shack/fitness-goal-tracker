@@ -94,24 +94,6 @@ export class StravaClient {
   }
 
   /**
-   * Get a specific activity by ID
-   */
-  async getActivity(id: number): Promise<StravaActivity> {
-    const response = await fetch(`${STRAVA_API_BASE}/activities/${id}`, {
-      headers: {
-        Authorization: `Bearer ${this.accessToken}`,
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to fetch activity: ${error}`);
-    }
-
-    return response.json();
-  }
-
-  /**
    * Get authenticated athlete profile
    */
   async getAthlete() {
