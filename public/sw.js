@@ -1,5 +1,5 @@
 const CACHE_NAME = "fit-tracker-v1";
-const STATIC_ASSETS = ["/icon-192.png", "/icon-512.png", "/app-icon.svg"];
+const STATIC_ASSETS = ["/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
