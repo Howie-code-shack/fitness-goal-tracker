@@ -41,39 +41,30 @@ export const goalsRouter = router({
       },
     });
 
-    // Get current progress for each goal
-    const goalsWithProgress = await Promise.all(
-      goals.map(async (goal) => {
-        const yearStart = new Date(currentYear, 0, 1);
-        const yearEnd = new Date(currentYear + 1, 0, 1);
+    // Get current progress for all goals in a single query
+    const yearStart = new Date(currentYear, 0, 1);
+    const yearEnd = new Date(currentYear + 1, 0, 1);
 
-        const result = await prisma.activity.aggregate({
-          where: {
-            userId: ctx.userId,
-            goalType: goal.type,
-            date: {
-              gte: yearStart,
-              lt: yearEnd,
-            },
-          },
-          _sum: {
-            distance: true,
-          },
-        });
+    const progressByType = await prisma.activity.groupBy({
+      by: ['goalType'],
+      where: {
+        userId: ctx.userId,
+        date: { gte: yearStart, lt: yearEnd },
+      },
+      _sum: { distance: true },
+    });
 
-        const progress = result._sum.distance || 0;
-
-        return {
-          id: goal.id,
-          type: goal.type,
-          yearlyTarget: goal.target,
-          currentProgress: progress,
-          year: goal.year,
-        };
-      })
+    const progressMap = new Map(
+      progressByType.map((p) => [p.goalType, p._sum.distance || 0])
     );
 
-    return goalsWithProgress;
+    return goals.map((goal) => ({
+      id: goal.id,
+      type: goal.type,
+      yearlyTarget: goal.target,
+      currentProgress: progressMap.get(goal.type) || 0,
+      year: goal.year,
+    }));
   }),
 
   // Initialize or update goals for the year
@@ -239,26 +230,23 @@ export const goalsRouter = router({
     const yearStart = new Date(currentYear, 0, 1);
     const yearEnd = new Date(currentYear + 1, 0, 1);
 
-    const stats = await Promise.all(
-      goals.map(async (goal) => {
-        const result = await prisma.activity.aggregate({
-          where: {
-            userId: ctx.userId,
-            goalType: goal.type,
-            date: {
-              gte: yearStart,
-              lt: yearEnd,
-            },
-          },
-          _sum: {
-            distance: true,
-          },
-        });
+    const progressByType = await prisma.activity.groupBy({
+      by: ['goalType'],
+      where: {
+        userId: ctx.userId,
+        date: { gte: yearStart, lt: yearEnd },
+      },
+      _sum: { distance: true },
+    });
 
-        const currentProgress = result._sum.distance || 0;
-        return calculateProgressStats(goal, currentProgress);
-      })
+    const progressMap = new Map(
+      progressByType.map((p) => [p.goalType, p._sum.distance || 0])
     );
+
+    const stats = goals.map((goal) => {
+      const currentProgress = progressMap.get(goal.type) || 0;
+      return calculateProgressStats(goal, currentProgress);
+    });
 
     // Find the most urgent activity (most negative percentBehind)
     const mostUrgent = stats.reduce((worst, current) => {

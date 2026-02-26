@@ -1,11 +1,59 @@
 import { router, protectedProcedure } from '../trpc';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { StravaClient, getValidAccessToken } from '@/lib/api/strava-client';
+import { StravaClient, isTokenExpired } from '@/lib/api/strava-client';
 import { ACTIVITY_TYPE_MAPPING } from '@/types/strava';
+import type { StravaTokens } from '@/types/strava';
 import { prisma } from '@/lib/db/prisma';
 import { config } from '@/lib/config';
-import type { StravaTokens } from '@/types/strava';
+
+/**
+ * Get a valid StravaClient for a user, refreshing tokens if needed.
+ * Returns null for getAthlete (optional) or throws for required endpoints.
+ */
+async function getValidStravaClient(userId: string): Promise<StravaClient> {
+  const stravaToken = await prisma.stravaToken.findUnique({
+    where: { userId },
+  });
+
+  if (!stravaToken) {
+    throw new TRPCError({
+      code: 'UNAUTHORIZED',
+      message: 'Not connected to Strava',
+    });
+  }
+
+  let accessToken = stravaToken.accessToken;
+
+  if (isTokenExpired(stravaToken.expiresAt)) {
+    try {
+      const refreshed = await StravaClient.refreshToken(stravaToken.refreshToken);
+
+      if (!refreshed.access_token || !refreshed.refresh_token) {
+        throw new Error('Invalid token response from Strava');
+      }
+
+      await prisma.stravaToken.update({
+        where: { userId },
+        data: {
+          accessToken: refreshed.access_token,
+          refreshToken: refreshed.refresh_token,
+          expiresAt: refreshed.expires_at,
+        },
+      });
+
+      accessToken = refreshed.access_token;
+    } catch (error) {
+      await prisma.stravaToken.deleteMany({ where: { userId } });
+      throw new TRPCError({
+        code: 'UNAUTHORIZED',
+        message: 'Strava token refresh failed. Please reconnect your Strava account.',
+      });
+    }
+  }
+
+  return new StravaClient(accessToken);
+}
 
 export const stravaRouter = router({
   // Get authorization URL
@@ -79,52 +127,7 @@ export const stravaRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const stravaToken = await prisma.stravaToken.findUnique({
-        where: { userId: ctx.userId },
-      });
-
-      if (!stravaToken) {
-        throw new Error('Not connected to Strava');
-      }
-
-      const tokens: StravaTokens = {
-        accessToken: stravaToken.accessToken,
-        refreshToken: stravaToken.refreshToken,
-        expiresAt: stravaToken.expiresAt,
-      };
-
-      // Get valid access token (refresh if needed)
-      let accessToken: string;
-      try {
-        accessToken = await getValidAccessToken(tokens);
-
-        // Update stored tokens if refreshed
-        if (accessToken !== tokens.accessToken) {
-          const refreshed = await StravaClient.refreshToken(tokens.refreshToken);
-
-          if (!refreshed.access_token || !refreshed.refresh_token) {
-            throw new Error('Invalid token response from Strava');
-          }
-
-          await prisma.stravaToken.update({
-            where: { userId: ctx.userId },
-            data: {
-              accessToken: refreshed.access_token,
-              refreshToken: refreshed.refresh_token,
-              expiresAt: refreshed.expires_at,
-            },
-          });
-        }
-      } catch (error) {
-        // Force re-authentication by deleting tokens
-        await prisma.stravaToken.deleteMany({ where: { userId: ctx.userId } });
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Strava token refresh failed. Please reconnect your Strava account.',
-        });
-      }
-
-      const client = new StravaClient(accessToken);
+      const client = await getValidStravaClient(ctx.userId);
 
       // Get enabled goal types for this user
       const currentYear = new Date().getFullYear();
@@ -180,55 +183,7 @@ export const stravaRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const stravaToken = await prisma.stravaToken.findUnique({
-        where: { userId: ctx.userId },
-      });
-
-      if (!stravaToken) {
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Not connected to Strava',
-        });
-      }
-
-      const tokens: StravaTokens = {
-        accessToken: stravaToken.accessToken,
-        refreshToken: stravaToken.refreshToken,
-        expiresAt: stravaToken.expiresAt,
-      };
-
-      // Get valid access token (refresh if needed)
-      let accessToken: string;
-      try {
-        accessToken = await getValidAccessToken(tokens);
-
-        // Update stored tokens if refreshed
-        if (accessToken !== tokens.accessToken) {
-          const refreshed = await StravaClient.refreshToken(tokens.refreshToken);
-
-          if (!refreshed.access_token || !refreshed.refresh_token) {
-            throw new Error('Invalid token response from Strava');
-          }
-
-          await prisma.stravaToken.update({
-            where: { userId: ctx.userId },
-            data: {
-              accessToken: refreshed.access_token,
-              refreshToken: refreshed.refresh_token,
-              expiresAt: refreshed.expires_at,
-            },
-          });
-        }
-      } catch (error) {
-        // Force re-authentication by deleting tokens
-        await prisma.stravaToken.deleteMany({ where: { userId: ctx.userId } });
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Strava token refresh failed. Please reconnect your Strava account.',
-        });
-      }
-
-      const client = new StravaClient(accessToken);
+      const client = await getValidStravaClient(ctx.userId);
 
       // Get enabled goal types for this user
       const currentYear = new Date().getFullYear();
@@ -344,53 +299,11 @@ export const stravaRouter = router({
   // Get athlete info
   getAthlete: protectedProcedure.query(async ({ ctx }) => {
     try {
-      const stravaToken = await prisma.stravaToken.findUnique({
-        where: { userId: ctx.userId },
-      });
-
-      if (!stravaToken) {
-        return null;
-      }
-
-      const tokens: StravaTokens = {
-        accessToken: stravaToken.accessToken,
-        refreshToken: stravaToken.refreshToken,
-        expiresAt: stravaToken.expiresAt,
-      };
-
-      let accessToken: string;
-      try {
-        accessToken = await getValidAccessToken(tokens);
-
-        // Update tokens in DB if they were refreshed
-        if (accessToken !== tokens.accessToken) {
-          const refreshed = await StravaClient.refreshToken(tokens.refreshToken);
-
-          if (!refreshed.access_token || !refreshed.refresh_token) {
-            throw new Error('Invalid token response from Strava');
-          }
-
-          await prisma.stravaToken.update({
-            where: { userId: ctx.userId },
-            data: {
-              accessToken: refreshed.access_token,
-              refreshToken: refreshed.refresh_token,
-              expiresAt: refreshed.expires_at,
-            },
-          });
-        }
-      } catch (tokenError) {
-        // Force re-authentication by deleting tokens
-        await prisma.stravaToken.deleteMany({ where: { userId: ctx.userId } });
-        console.error(`[getAthlete] Token refresh failed:`, tokenError);
-        return null;
-      }
-
-      const client = new StravaClient(accessToken);
+      const client = await getValidStravaClient(ctx.userId);
       return client.getAthlete();
     } catch (error) {
-      console.error(`[getAthlete] Error:`, error);
       // Return null instead of throwing - athlete info is optional
+      console.error(`[getAthlete] Error:`, error);
       return null;
     }
   }),

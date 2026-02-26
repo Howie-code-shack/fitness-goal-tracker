@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     // User denied authorization
-    return NextResponse.redirect(`${baseUrl}/?strava_error=${error}`);
+    return NextResponse.redirect(`${baseUrl}/?strava_error=auth_denied`);
   }
 
   if (!code) {

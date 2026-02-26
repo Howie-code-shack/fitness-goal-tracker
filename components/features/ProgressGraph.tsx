@@ -17,6 +17,7 @@ export function ProgressGraph({ goalType }: ProgressGraphProps) {
   const [activeTab, setActiveTab] = useState<ViewTab>('yearly');
   const { data: goals } = trpc.goals.getGoals.useQuery();
   const { data: stats } = trpc.goals.getProgressStats.useQuery({ goalType });
+  const { data: monthlyBreakdown } = trpc.goals.getMonthlyBreakdown.useQuery({ goalType });
 
   const goal = goals?.find((g) => g.type === goalType);
   const isSwimming = goalType === 'swimming';
@@ -24,33 +25,33 @@ export function ProgressGraph({ goalType }: ProgressGraphProps) {
   const decimals = isSwimming ? 0 : 1;
 
   const chartData = useMemo(() => {
-    if (!goal || !stats) return [];
+    if (!goal || !stats || !monthlyBreakdown) return [];
 
     const currentYear = new Date().getFullYear();
-    const yearStart = new Date(currentYear, 0, 1);
     const now = new Date();
     const monthsPassed = now.getMonth() + 1;
 
     const data = [];
     const monthlyTarget = goal.yearlyTarget / 12;
-    const currentMonthlyProgress = stats.distanceCompleted / monthsPassed;
+    let cumulativeActual = 0;
 
     for (let month = 0; month <= 11; month++) {
       const monthDate = new Date(currentYear, month, 1);
-      const isCurrentOrFuture = monthDate > now;
+      const isPast = month < monthsPassed;
+
+      if (isPast) {
+        cumulativeActual += monthlyBreakdown[month]?.total || 0;
+      }
 
       data.push({
         month: monthDate.toLocaleString('default', { month: 'short' }),
         target: monthlyTarget * (month + 1),
-        actual: isCurrentOrFuture ? null : Math.min(currentMonthlyProgress * (month + 1), stats.distanceCompleted),
+        actual: isPast ? cumulativeActual : null,
       });
     }
 
-    // Set the current month's actual progress
-    data[monthsPassed - 1].actual = stats.distanceCompleted;
-
     return data;
-  }, [goal, stats]);
+  }, [goal, stats, monthlyBreakdown]);
 
   if (!goal || !stats) {
     return (

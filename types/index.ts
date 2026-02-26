@@ -3,15 +3,15 @@ export type GoalType = 'running' | 'cycling' | 'swimming';
 export interface Goal {
   id: string;
   type: GoalType;
-  yearlyTarget: number; // in km
-  currentProgress: number; // in km
+  yearlyTarget: number; // meters for swimming, km for running/cycling
+  currentProgress: number; // meters for swimming, km for running/cycling
   year: number;
 }
 
 export interface Activity {
   id: string;
   goalType: GoalType;
-  distance: number; // in km
+  distance: number; // meters for swimming, km for running/cycling
   date: string; // ISO string
   notes?: string;
 }
