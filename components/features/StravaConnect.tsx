@@ -101,7 +101,7 @@ export function StravaConnect({ lastSyncedAt, manualSync, isAutoSyncing }: Strav
   return (
     <Card>
       <CardContent className="pt-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="flex-shrink-0">
               {athlete?.profile_medium ? (
@@ -118,11 +118,11 @@ export function StravaConnect({ lastSyncedAt, manualSync, isAutoSyncing }: Strav
                 </div>
               )}
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <h3 className="text-lg font-bold mb-1">
                 {athlete ? `${athlete.firstname} ${athlete.lastname}` : 'Strava Connected'}
               </h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground truncate">
                 {lastSyncedAt ? (
                   `Last synced ${formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: true })}`
                 ) : athlete?.username ? (
@@ -133,7 +133,7 @@ export function StravaConnect({ lastSyncedAt, manualSync, isAutoSyncing }: Strav
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-shrink-0">
             <Button
               onClick={manualSync}
               disabled={isAutoSyncing || disconnectMutation.isPending}
