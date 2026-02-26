@@ -96,6 +96,7 @@ export function ProgressGraph({ goalType }: ProgressGraphProps) {
               <YAxis
                 stroke="#6B7280"
                 style={{ fontSize: '0.875rem' }}
+                tickFormatter={(value: number) => value.toFixed(decimals)}
                 label={{ value: `Distance (${unit})`, angle: -90, position: 'insideLeft', style: { fill: '#6B7280' } }}
               />
               <Tooltip

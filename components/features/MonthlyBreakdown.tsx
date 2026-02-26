@@ -59,7 +59,8 @@ export function MonthlyBreakdown({ goalType }: MonthlyBreakdownProps) {
         <YAxis
           stroke="#6B7280"
           style={{ fontSize: '0.875rem' }}
-          domain={[0, (dataMax: number) => Math.max(dataMax, monthlyTarget * 1.1)]}
+          domain={[0, (dataMax: number) => Math.ceil(Math.max(dataMax, monthlyTarget * 1.1))]}
+          tickFormatter={(value: number) => value.toFixed(decimals)}
           label={{ value: `Distance (${unit})`, angle: -90, position: 'insideLeft', style: { fill: '#6B7280' } }}
         />
         <Tooltip
