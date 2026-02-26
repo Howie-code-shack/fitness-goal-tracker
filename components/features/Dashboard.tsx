@@ -4,12 +4,17 @@ import { GoalCard } from './GoalCard';
 import { ProgressGraph } from './ProgressGraph';
 import { StravaConnect } from './StravaConnect';
 import { UserMenu } from './UserMenu';
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { trpc } from '@/lib/api/trpc-client';
 import type { GoalType } from '@/types';
 import { useAutoStravaSync } from '@/lib/hooks/use-auto-strava-sync';
 
-export function Dashboard() {
+interface DashboardProps {
+  onEditGoals: () => void;
+}
+
+export function Dashboard({ onEditGoals }: DashboardProps) {
   const [selectedGoal, setSelectedGoal] = useState<GoalType>('running');
 
   // Auto-sync Strava activities
@@ -39,7 +44,12 @@ export function Dashboard() {
               Track your progress for {new Date().getFullYear()}
             </p>
           </div>
-          <UserMenu />
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={onEditGoals}>
+              Edit Goals
+            </Button>
+            <UserMenu />
+          </div>
         </div>
 
         {/* Strava Connection */}

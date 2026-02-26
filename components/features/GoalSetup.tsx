@@ -12,7 +12,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/features/ThemeToggle';
 
-export function GoalSetup({ onComplete }: { onComplete: () => void }) {
+interface GoalSetupProps {
+  onComplete: () => void;
+  initialValues?: { running: number; cycling: number; swimming: number };
+}
+
+export function GoalSetup({ onComplete, initialValues }: GoalSetupProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const updateGoalsMutation = trpc.goals.updateGoals.useMutation();
@@ -23,7 +28,7 @@ export function GoalSetup({ onComplete }: { onComplete: () => void }) {
     formState: { errors },
   } = useForm<UpdateGoalsInput>({
     resolver: zodResolver(updateGoalsSchema),
-    defaultValues: {
+    defaultValues: initialValues ?? {
       running: 400,
       cycling: 4000,
       swimming: 80000,
@@ -59,10 +64,10 @@ export function GoalSetup({ onComplete }: { onComplete: () => void }) {
       <Card className="max-w-2xl w-full">
         <CardHeader className="text-center">
           <CardTitle className="text-4xl font-bold">
-            Set Your {new Date().getFullYear()} Goals
+            {initialValues ? 'Edit' : 'Set'} Your {new Date().getFullYear()} Goals
           </CardTitle>
           <CardDescription className="text-lg">
-            Enter your target distances for the year
+            {initialValues ? 'Update your target distances' : 'Enter your target distances for the year'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -108,7 +113,7 @@ export function GoalSetup({ onComplete }: { onComplete: () => void }) {
               className="w-full h-14 text-lg font-semibold"
               size="lg"
             >
-              {isSubmitting ? 'Setting Goals...' : 'Start Tracking'}
+              {isSubmitting ? 'Saving...' : initialValues ? 'Update Goals' : 'Start Tracking'}
             </Button>
           </form>
         </CardContent>

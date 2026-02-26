@@ -7,7 +7,10 @@ import { Dashboard } from '@/components/features/Dashboard';
 
 export default function Home() {
   const [setupComplete, setSetupComplete] = useState(false);
+  const [editing, setEditing] = useState(false);
   const { data: hasGoals, isLoading } = trpc.goals.hasGoals.useQuery();
+  const { data: goals } = trpc.goals.getGoals.useQuery();
+  const utils = trpc.useUtils();
 
   if (isLoading) {
     return (
@@ -20,9 +23,29 @@ export default function Home() {
     );
   }
 
+  if (editing && goals) {
+    const initialValues = {
+      running: goals.find((g) => g.type === 'running')?.yearlyTarget ?? 400,
+      cycling: goals.find((g) => g.type === 'cycling')?.yearlyTarget ?? 4000,
+      swimming: goals.find((g) => g.type === 'swimming')?.yearlyTarget ?? 80000,
+    };
+
+    return (
+      <GoalSetup
+        initialValues={initialValues}
+        onComplete={() => {
+          setEditing(false);
+          utils.goals.getGoals.invalidate();
+          utils.goals.getAllProgressStats.invalidate();
+          utils.goals.hasGoals.invalidate();
+        }}
+      />
+    );
+  }
+
   if (!hasGoals && !setupComplete) {
     return <GoalSetup onComplete={() => setSetupComplete(true)} />;
   }
 
-  return <Dashboard />;
+  return <Dashboard onEditGoals={() => setEditing(true)} />;
 }
