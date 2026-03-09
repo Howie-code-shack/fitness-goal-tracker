@@ -124,6 +124,19 @@ export function GoalCard({ goalType, label, icon, color, isMostUrgent }: GoalCar
               </p>
             </div>
           </div>
+
+          {stats.distanceRemaining > 0 && (
+            <div className="col-span-2 pt-3 border-t">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                Required Pace
+              </p>
+              <p className="text-lg font-semibold">
+                {stats.requiredPerWeek.toFixed(isSwimming ? 0 : 1)} {unit}/week
+                <span className="text-muted-foreground font-normal mx-2">·</span>
+                {stats.requiredPerMonth.toFixed(isSwimming ? 0 : 1)} {unit}/month
+              </p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

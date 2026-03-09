@@ -18,14 +18,34 @@ function calculateProgressStats(goal: { target: number; type: string }, currentP
     ? (distanceAheadBehind / goal.target) * 100
     : 0;
 
+  const distanceRemaining = Math.max(0, goal.target - currentProgress);
+
+  // Calculate required pace to finish on time
+  const daysRemaining = daysInYear - daysPassed;
+  const weeksRemaining = Math.floor(daysRemaining / 7);
+  const monthsRemaining = 12 - now.getMonth() - (now.getDate() >= 28 ? 1 : 0);
+
+  let requiredPerWeek: number;
+  let requiredPerMonth: number;
+
+  if (distanceRemaining === 0) {
+    requiredPerWeek = 0;
+    requiredPerMonth = 0;
+  } else {
+    requiredPerWeek = weeksRemaining > 0 ? distanceRemaining / weeksRemaining : distanceRemaining;
+    requiredPerMonth = monthsRemaining > 0 ? distanceRemaining / monthsRemaining : distanceRemaining;
+  }
+
   return {
     goalType: goal.type,
-    distanceRemaining: Math.max(0, goal.target - currentProgress),
+    distanceRemaining,
     distanceCompleted: currentProgress,
     distanceAheadBehind,
     percentComplete: (currentProgress / goal.target) * 100,
     expectedProgress,
     percentBehind,
+    requiredPerWeek,
+    requiredPerMonth,
   };
 }
 
