@@ -262,6 +262,42 @@ export const goalsRouter = router({
     return { stats, mostUrgent: urgentGoalType };
   }),
 
+  // Get weekly breakdown for a goal type (current year, 52 weeks)
+  getWeeklyBreakdown: protectedProcedure
+    .input(z.object({ goalType: goalTypeSchema }))
+    .query(async ({ ctx, input }) => {
+      const currentYear = new Date().getFullYear();
+      const yearStart = new Date(currentYear, 0, 1);
+      const yearEnd = new Date(currentYear + 1, 0, 1);
+
+      const activities = await prisma.activity.findMany({
+        where: {
+          userId: ctx.userId,
+          goalType: input.goalType,
+          date: {
+            gte: yearStart,
+            lt: yearEnd,
+          },
+        },
+        select: {
+          distance: true,
+          date: true,
+        },
+      });
+
+      // Group by week of year (0-based: week 0 = days 0–6, ..., week 51 = remainder of year)
+      const weeklyTotals = new Array(52).fill(0);
+      for (const activity of activities) {
+        const dayOfYear = Math.floor(
+          (activity.date.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        const week = Math.min(Math.floor(dayOfYear / 7), 51);
+        weeklyTotals[week] += activity.distance;
+      }
+
+      return weeklyTotals.map((total, week) => ({ week, total }));
+    }),
+
   // Get monthly breakdown for a goal type (current year)
   getMonthlyBreakdown: protectedProcedure
     .input(z.object({ goalType: goalTypeSchema }))

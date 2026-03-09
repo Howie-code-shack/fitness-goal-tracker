@@ -17,41 +17,52 @@ export function ProgressGraph({ goalType }: ProgressGraphProps) {
   const [activeTab, setActiveTab] = useState<ViewTab>('yearly');
   const { data: goals } = trpc.goals.getGoals.useQuery();
   const { data: stats } = trpc.goals.getProgressStats.useQuery({ goalType });
-  const { data: monthlyBreakdown } = trpc.goals.getMonthlyBreakdown.useQuery({ goalType });
+  const { data: weeklyBreakdown } = trpc.goals.getWeeklyBreakdown.useQuery({ goalType });
 
   const goal = goals?.find((g) => g.type === goalType);
   const isSwimming = goalType === 'swimming';
   const unit = isSwimming ? 'm' : 'km';
   const decimals = isSwimming ? 0 : 1;
 
-  const chartData = useMemo(() => {
-    if (!goal || !stats || !monthlyBreakdown) return [];
-
-    const currentYear = new Date().getFullYear();
-    const now = new Date();
-    const monthsPassed = now.getMonth() + 1;
-
-    const data = [];
-    const monthlyTarget = goal.yearlyTarget / 12;
-    let cumulativeActual = 0;
-
-    for (let month = 0; month <= 11; month++) {
-      const monthDate = new Date(currentYear, month, 1);
-      const isPast = month < monthsPassed;
-
-      if (isPast) {
-        cumulativeActual += monthlyBreakdown[month]?.total || 0;
-      }
-
-      data.push({
-        month: monthDate.toLocaleString('default', { month: 'short' }),
-        target: monthlyTarget * (month + 1),
-        actual: isPast ? cumulativeActual : null,
-      });
+  const { chartData, monthTickWeeks, weekLabels } = useMemo(() => {
+    if (!goal || !stats || !weeklyBreakdown) {
+      return { chartData: [], monthTickWeeks: [] as number[], weekLabels: {} as Record<number, string> };
     }
 
-    return data;
-  }, [goal, stats, monthlyBreakdown]);
+    const currentYear = new Date().getFullYear();
+    const yearStart = new Date(currentYear, 0, 1);
+    const now = new Date();
+    const currentDayOfYear = Math.floor((now.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24));
+    const currentWeek = Math.floor(currentDayOfYear / 7);
+
+    // Map week index -> month abbreviation for x-axis labels
+    const weekLabels: Record<number, string> = {};
+    const monthTickWeeks: number[] = [];
+    for (let month = 0; month < 12; month++) {
+      const monthStart = new Date(currentYear, month, 1);
+      const dayOfYear = Math.floor((monthStart.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24));
+      const week = Math.floor(dayOfYear / 7);
+      weekLabels[week] = monthStart.toLocaleString('default', { month: 'short' });
+      monthTickWeeks.push(week);
+    }
+
+    const weeklyTarget = goal.yearlyTarget / 52;
+    let cumulativeActual = 0;
+
+    const chartData = weeklyBreakdown.map(({ week, total }) => {
+      const isPast = week <= currentWeek;
+      if (isPast) {
+        cumulativeActual += total;
+      }
+      return {
+        week,
+        target: weeklyTarget * (week + 1),
+        actual: isPast ? cumulativeActual : null,
+      };
+    });
+
+    return { chartData, monthTickWeeks, weekLabels };
+  }, [goal, stats, weeklyBreakdown]);
 
   if (!goal || !stats) {
     return (
@@ -89,9 +100,11 @@ export function ProgressGraph({ goalType }: ProgressGraphProps) {
             <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
               <XAxis
-                dataKey="month"
+                dataKey="week"
                 stroke="#6B7280"
                 style={{ fontSize: '0.875rem' }}
+                ticks={monthTickWeeks}
+                tickFormatter={(week: number) => weekLabels[week] ?? ''}
               />
               <YAxis
                 stroke="#6B7280"
