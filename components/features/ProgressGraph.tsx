@@ -97,7 +97,7 @@ export function ProgressGraph({ goalType }: ProgressGraphProps) {
       <CardContent>
         {activeTab === 'yearly' ? (
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 30, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
               <XAxis
                 dataKey="week"
@@ -110,7 +110,7 @@ export function ProgressGraph({ goalType }: ProgressGraphProps) {
                 stroke="#6B7280"
                 style={{ fontSize: '0.875rem' }}
                 tickFormatter={(value: number) => value.toFixed(decimals)}
-                label={{ value: `Distance (${unit})`, angle: -90, position: 'insideLeft', style: { fill: '#6B7280' } }}
+                label={{ value: `Distance (${unit})`, angle: -90, position: 'insideLeft', offset: -15, style: { fill: '#6B7280' } }}
               />
               <Tooltip
                 contentStyle={{
