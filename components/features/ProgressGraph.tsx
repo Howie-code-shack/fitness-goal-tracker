@@ -120,6 +120,7 @@ export function ProgressGraph({ goalType }: ProgressGraphProps) {
                   color: '#F9FAFB',
                 }}
                 formatter={(value?: number) => [value !== undefined ? `${value.toFixed(decimals)} ${unit}` : '', '']}
+                labelFormatter={(week: number) => `Week ${week + 1}`}
               />
               <Legend
                 wrapperStyle={{ paddingTop: '1rem' }}
@@ -129,7 +130,7 @@ export function ProgressGraph({ goalType }: ProgressGraphProps) {
                 type="monotone"
                 dataKey="target"
                 stroke="#9CA3AF"
-                strokeWidth={2}
+                strokeWidth={1.5}
                 strokeDasharray="5 5"
                 name="Target"
                 dot={false}
@@ -138,9 +139,10 @@ export function ProgressGraph({ goalType }: ProgressGraphProps) {
                 type="monotone"
                 dataKey="actual"
                 stroke="#3B82F6"
-                strokeWidth={3}
+                strokeWidth={2}
                 name="Your Progress"
-                dot={{ fill: '#3B82F6', r: 4 }}
+                dot={false}
+                activeDot={{ fill: '#3B82F6', r: 4, strokeWidth: 0 }}
                 connectNulls={false}
               />
             </LineChart>
